@@ -1,0 +1,37 @@
+comment -*- mode: text -*-
+comment update: <2011/9/17(09:17:07)>
+comment $Id$
+
+* NetBSD 5.1 + scim 1.4.9 で mlterm --im scim すると、segmentation fault する。
+  (mlterm 2.9.4, 3.0.6)
+
+* 一部の環境(NetBSD 3.0.1) では、mlterm 本体を pthread にリンク(又は LD_PRELOAD
+  環境変数に libpthread.so ライブラリを指定)しておかないと、pthread に依存する
+  module (libtype_cairo, libptyssh) を dlopen した場合に abort する。
+  NetBSD 5.1, Ubuntu 11.04 では問題ない。
+  (mlterm 3.0.7pre 2011-09-16)
+
+* 背景透過 + 輝度調節中に、スクロールバーの位置を変えると、透過している
+  背景がずれる。
+  (当面直す予定なし)
+
+* Gnome + Sawfish 0.36-7 にて、app_name または title を指定しないと、Window
+  タイトルが化ける。
+  (reported by K.Kawabata san)
+
+* mlterm --display hoge で、起動し、 mlclient --display fuga したあと、
+  最初のウィンドウを殺すと、二つ目のウィンドウに、何も入力できなくなる。
+  x_display_close() の x_xim_display_closed() と XCloseDisplay() をコメ
+  ントアウトすると問題ない。
+
+* 複数の Display に接続している場合、一方の Display でしか XIM を起動できな
+  い場合がある。
+
+<http://cvs.sourceforge.net/viewcvs.py/mlterm/mlterm/xwindow/x_xim.c?r1=1.6&r2=1.7>
+によりの複数ディスプレイと XIM の問題は直っている筈です。ただし、XIM を使いつ
+つ Xsun と XFree86 など異なる X サーバの Display に接続すると落ちます。全ての
+Display が XFree86 であれば問題なさそうです。(2004-10-20 佐藤精一)
+
+* Win32 版で user,project@shell.sourceforge.net のように ',' を含むユーザ名を
+  server_list オプションに指定すると、',' で区切られ、user と
+  project@shell.sourceforge.net を別々のサーバと認識してしまう。

@@ -1,0 +1,25 @@
+top_builddir = ..
+top_srcdir = @top_srcdir@
+prefix=@prefix@
+mandir=@mandir@
+
+MANDIR=$(DESTDIR)$(mandir)
+MAN1DIR=$(MANDIR)/man1
+
+INSTALL=@INSTALL@
+
+all .DEFAULT:
+	@echo "no such a target"
+
+$(MAN1DIR):
+	mkdir -p $(MAN1DIR)
+
+install: $(MAN1DIR)
+	$(INSTALL) -m 644 $(top_srcdir)/man/mlterm.1 $(MAN1DIR)
+	$(INSTALL) -m 644 $(top_srcdir)/man/mlclient.1 $(MAN1DIR)
+
+uninstall:
+	rm -f $(MAN1DIR)/mlterm.1 $(MAN1DIR)/mlclient.1
+
+distclean:
+	rm -f Makefile

@@ -1,0 +1,133 @@
+comment -*- mode: text -*-
+comment $Id$
+
+Framebuffer 対応に関するメモ
+
+* テスト環境
+  Ubuntu 12.10
+  CentOS 5
+  (Linux kernel 2.6 以降対応)
+
+  FreeBSD 9.0
+
+  NetBSD teokure 6.0.1
+
+  OpenBSD 5.3
+
+* ビルド
+  ./configure --with-gui=fb ...
+  make
+  sudo make install
+  (インストール先は、X 版 mlterm と同じディレクトリで構いません。
+   この場合、すでに X版 mlterm がインストールされていれば、全てのファイルを
+   make install しなくても、make install-fb で、mlterm-fb, libsample-fb.so 及び
+   libim-*-fb.so ファイルだけインストールしても、問題ありません。)
+
+* 設定
+  フォント設定以外は、X 版 mlterm と同じです。
+  なお、mlterm-fb を起動する前に、必ずフォントの設定を行ってください。
+
+  o フォントの設定方法
+    ~/.mlterm/font でなく、~/.mlterm/font-fb に、使用するフォントを設定してくだ
+    さい。font-fb のフォーマットは font と基本的には同じですが、XLFD ではなく、
+    使用するフォントファイルのパスを記載します。
+    (etc/font-fb がサンプルです。)
+
+* 起動方法
+  mlterm-fb (-fg white -bg black -sb=false)
+
+* 留意事項
+  (for Linux)
+  o キーボードに対応する /dev/input/event* が存在しない、又はアクセスする権限
+    がない場合、ショートカットキーは使用できません。
+    なお、キーボードに対応する /dev/input/event* は、/sys/class/input/input*/name
+    の文字列に key が含まれているかどうかで判定しています。
+  o マウスに対応する /dev/input/event* が存在しない、又はアクセスする権限がない
+    場合、マウスを使うことはできません。
+    なお、マウスに対応する /dev/input/event* は、/sys/class/input/input*/name
+    の文字列に mouse が含まれているかどうかで判定しています。
+  o マウスを使用する場合、gpm は停止しておいてください。
+    (/etc/init.d/gpm stop)
+
+  (for FreeBSD)
+  o あらかじめ、SC_PIXEL_MODE 及び VESA オプション付きのカーネルで起動(又は起動
+    後にカーネルモジュールをロード)し、vidcontrol コマンド等により、適切な表示モ
+    ードを指定してください。
+    $ vidcontrol MODE_XXX
+    (vidcontrol -i modeで表示される全てのモードで mlterm-fb が起動するわけではな
+    いので注意してください。)
+  o キーリピートを変更する場合は kbdcontrol -r [delay.repeat] で、write-combine
+    を有効にする場合は memcontrol set -b 0x.... -l 0x.... write-combine で、それ
+    ぞれあらかじめ設定しておいてください。
+  o マウス(/dev/sysmouse)を使用する場合、あらかじめ、次のように moused を起動し
+    ておいてください。
+    $ /etc/rc.d/moused onestart
+
+  (for NetBSD)
+  o See https://gist.github.com/tsutsui/5689730
+    (Thanks to @tsutsuii san)
+  o /boot.cfg に次のように vesa を指定して起動してください。
+    menu=Boot vesa:vesa 800x600x32;boot netbsd
+                   ^^^^^^^^^^^^^^^
+  o キーリピートは、~/.mlterm/main に次のオプションを指定することで変更できます。
+    ただし、指定できる値は25ms単位になります。
+    wskbd_repeat_1=400
+    wskbd_repeat_N=50
+  o キーボード入力は、/dev/wskbd を使って読み込みます。別のデバイスを使用したい
+    場合は、WSKBD 環境変数にそのデバイス名を指定してください。
+    (e.g. export WSKBD=/dev/wskbd0)
+  o 8 bpp で使用した場合、色が正しく表示されません(要修正)。
+  o Input method plugin として iBus を使用する場合は、./configure に
+    --without-pthread を指定してビルドしないでください(mlterm-fb に pthread ライ
+    ブラリをリンクしておかないと、ibus module の dlopen に失敗します。)。
+  o NetBSD/x68k では ~/.mlterm/main に次のように指定することで、解像度を変更でき
+    ます。サポートする解像度は、512x512x15 512x512x8 768x512x4 768x512x1
+    1024x768x4 1024x768x1 です。
+    fb_resolution=512x512x15
+  o NetBSD/x68k では、--multivram 又は separate_wall_picture=true オプションを指
+    定すると、壁紙のみ Text VRAM に (その他は Graphic VRAM) に描画します。これに
+    より、スクロール速度が改善します。
+
+  (for OpenBSD)
+  o 次の2行を有効にしてカーネルの再構築を行ってください。
+    (OpenBSD 4.9以降では http://mlterm.sf.net/openbsd-5.3-fixvesa.patch も当ててください)
+    vesabios0 at mainbus?
+    option VESAFB
+  o ~/.mlterm/main に次のように指定することで、解像度を変更できます。
+    fb_resolution=800x600x32
+  o キーリピートは、/etc/wsconsctl.conf に設定するか、wsconsctl コマンドで指定し
+    てください。
+    $ wsconsctl keyboard.repeat.del1=400
+    $ wsconsctl keyboard.repeat.deln=50
+  o キーボード入力は、/dev/wskbd を使って読み込みます。別のデバイスを使用したい
+    場合は、WSKBD 環境変数にそのデバイス名を指定してください。
+    (e.g. export WSKBD=/dev/wskbd0)
+
+  (Common)
+  o 画面の右下隅でマウスの左ボタンをダブルクリックすると、ソフトウェアキーボード
+    を使用することができます。
+  o mlcc を使ってフォント設定を動的に変更する場合には、
+    $ mlcc font-fb ...
+    でなく、X 版と同様、
+    $ mlcc font ...
+    としてください。
+  o 画面にゴミが残ったり、8 bpp での cmap の設定が変わってしまった場合には、
+    $ mlcc exec update_all
+    としてください。
+  o 使用可能なスクロールバーは、simpleとsampleのみです。
+    ただし、1 bpp の場合は、スクロールバーありの状態で画面スクロールを行うと、ス
+    クロールバーの表示が乱れることがあるため、使用は推奨しません。
+  o 使用可能なInput method pluginは、kbd、m17nlib、uim及びiBusのみです。
+    (iBus を使用する場合は、あらかじめ、ibus-daemon -d 及び
+     /usr/lib/ibus-*/ibus-engine-* & を手動で起動しておいてください。
+     なお、iBus はFreeBSD 上ではテストしていません。)
+
+* 使えない機能
+  o 2,4 bpp
+  o プロポーショナルフォント
+    (use_variable_column_width 及び use_ind オプションも使用できません。)
+  o ssh2 client (パスフレーズ入力画面を実装していないため)
+  o Daemon mode
+  o mlclient (mlclientxは使えます。)
+  o ~/.mlterm/key の OPEN_SCREEN
+  o geometry オプション

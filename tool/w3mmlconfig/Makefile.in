@@ -1,0 +1,59 @@
+top_builddir	= ..
+top_srcdir	= @top_srcdir@
+prefix		= @prefix@
+sysconfdir	= @sysconfdir@
+exec_prefix	= @exec_prefix@
+datadir		= @datadir@
+bindir		= @bindir@
+libdir		= @libdir@
+libexecdir	= @libexecdir@
+
+BIN_DIR		= $(DESTDIR)$(prefix)/bin
+LIB_DIR		= $(DESTDIR)$(libexecdir)/w3mmlconfig
+
+TARGETS		= w3mmlconfig
+LIB_TARGETS	= mlconfig.cgi
+DATA_TARGETS	= mlconfig-data.pl
+DATA		= mlconfig-data section/* key/*
+
+PERL		= @PERL@
+
+MKDIR		= mkdir -p
+INSTALL		= @INSTALL@
+INSTALL_SCRIPT	= $(INSTALL) -m 755
+INSTALL_DATA	= $(INSTALL) -m 644
+
+all: $(TARGETS) $(LIB_TARGETS) $(DATA_TARGETS)
+
+mlconfig-data.pl: $(DATA)
+	$(PERL) mk_mlconfig-data.pl mlconfig-data > $@
+
+install: all
+	-$(MKDIR) $(BIN_DIR)
+	-$(MKDIR) $(LIB_DIR)
+	for file in $(TARGETS);     \
+	do      \
+		$(INSTALL_SCRIPT) $$file $(BIN_DIR);  \
+	done
+	for file in $(LIB_TARGETS);     \
+	do      \
+		$(INSTALL_SCRIPT) $$file $(LIB_DIR);  \
+	done
+	for file in $(DATA_TARGETS);     \
+	do      \
+		$(INSTALL_DATA) $$file $(LIB_DIR);  \
+	done
+
+uninstall:
+	for file in $(TARGETS);     \
+	do      \
+		rm -f $(BIN_DIR)/$$file;  \
+	done
+	rm -rf $(LIB_DIR)
+
+clean:
+	rm -f $(DATA_TARGETS)
+
+distclean: clean
+	rm -f Makefile $(LIB_TARGETS) $(TARGETS)
+

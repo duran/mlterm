@@ -1,0 +1,775 @@
+ver 3.3.2
+* Desynchronize ssh negotiation on cygwin or mingw.
+* "inner_border" option accepts "[horizontal border],[vertical border]" format value.
+* Bug fixes:
+  Fix memory leak when opening pty fails on win32gdi.
+  Fix the bug which disabled to clear hidden input method window it if large
+  value is specified for --border option.
+  Fix the bug which disabled to paste UTF-8 string.
+
+ver 3.3.1
+* Add "use_auto_detect" and "auto_detect_encodings" options.
+  (auto_detect_encodings=utf8,eucjp,sjis and use_auto_detect=true enable
+  auto detection of utf8, eucjp and sjis.)
+* Support ESC $ on non-ISO2022 encodings such as UTF-8.
+* Reset pending DCS sequence by pressing ESC key.
+* Support iBus 1.5.
+* Enable to specify the conversion engine name of iBus. (e.g. --im ibus:anthy)
+* Desynchronize ESC [ 5379 ; show_picture BEL on cygwin/win32gdi or mingw.
+* "unlimited" value is available for "logsize" option.
+* Bug fixes:
+  Fix the bug of convertion to sjis.
+  Fix the bug which disabled threading scp.
+  Fix https://bugzilla.novell.com/show_bug.cgi?id=849342
+
+ver 3.3.0
+* Support framebuffer on NetBSD/x68k. (Thanks to NetBSD/x68k developers)
+* Support Android. (Experimental)
+* Update the colormap instead of searching the closest color when
+  OSC 4 ; c ; spec changes RGB of the color number on framebuffer.
+* Support OSC ? 80 h (disable sixel scrolling).
+* Support U+XXXX-XXXX key in 'font' configuration file.
+* Add "unicode_noconv_areas" (a.k.a --ucsnoconv) option.
+* Add "allow_scp" (a.k.a --scp) option.
+* Remove SWITCH_OSC52. (Use "proto:allow_osc52=switch" instead.)
+* OSC 5383 reqests challenge sequence.
+* Bug fixes:
+  #70 (Thanks to Thomas Wolff)
+  Fix the bug which disabled redrawing the margin area on framebuffer.
+  Fix the bug of the transparent color of sixel graphics on win32.
+  OSC 4 has an effect on RGB of the window background color.
+  Send a sixel next line character (-) following a sixel dump.
+  Fix the bug which disabled Mod+XXX shortcut key settings on win32.
+  Fix the bug which erased the end character of each line in scrolling if DECSLRM
+  set the right margin at the right end is fixed.
+  Fix the bug of DL/IL which scrolled the screen instead of inserting or deleteing
+  lines from the cursor position.
+  Fix keypad '5' key (VK_CLEAR) on win32.
+  Fix the bug of ignoring the next character after sixel graphics data.
+  Fix the bug which makes the window smaller than necessary in resizing.
+  Support wsdisplay of the BBGGRR format on NetBSD/OpenBSD. (Thanks to @oshimyja san)
+
+ver 3.2.2
+* Support SSH agent authentication and forwarding.
+* Support X11 forwarding (no xauth) on win32/libssh2 and java.
+* Add "X11 forwarding" checkbox to the connection dialog on win32.
+* Change "skip_dialog" option to "show_dialog" and reverse the default behavior.
+* Open a pty channel on the same ssh session as the active screen when OPEN_PTY
+  or OPEN_SCREEN shortcut key is pressed.
+* Bug fixes:
+  Fix configure error which --with-gui=xlib,fb option causes. (enbugged at 3.2.1)
+  DECALN(ESC#8) resets the screen margins.
+  Fix the cursor position in inserting RTL characters after one LTR character.
+  Fix segmentation fault of libvte compatible libyrary with synaptic 0.80.
+  Fix clipboard operations of copy&paste on multiple windows on win32.
+  Fix hangup on x11 forwarding.
+  Fix segmentation fault in closing the first window on win32/libssh2.
+  Fix the font and position of IME preedit text on win32.
+
+ver 3.2.1
+* Support framebuffer on OpenBSD.
+* Support software keyboard on framebuffer.
+  (Double-click Button1 at the right bottom corner of the screen to show it.)
+* Support USB keyboard with iBus on NetBSD/OpenBSD framebuffer.
+* Support CSI ? 69 h, CSI ? 69 l (DECLRMM) and CSI pl;pr s (DECSLRM).
+* Support CSI 3 m and CSI 23 m which set/unset italic attribute.
+* Prefer JISX0208 to JISX0213 all the time in converting Unicode to other cs.
+* If DEFAULT=-foo-bar-medium-r-*--%d-*- is specified in ~/.mlterm/font,
+  -foo-bar-bold-r-*--%d-*-, -foo-bar-medium-i-*--%d-*- or -foo-bar-bold-i-*--%d-*-
+  are automatically searched for a bold, italic or bold italic font.
+* Bug fixes:
+  SF Bug #3614142 (Thanks to Ahmed El-Mahmoudy)
+  SF Bug #3614192 (Thanks to Ahmed El-Mahmoudy)
+  Fix the bug which caused segmentation fault in using a font whose width doesn't
+  match the usascii font on 24 or 32 bpp framebuffer.
+  Fix the bug which caused segmentation fault in closing input method status window.
+  Fix the bug which caused segmentation fault in loading illegal pcf fonts.
+  Resize the window in attaching a new pty. (enbugged at 3.2.0)
+  Fix the bug which disabled mlconfig and mlterm-menu. (enbugged at 3.2.0)
+  Fix the error message in the failure of loading US-ASCII font.
+  Fix the bug which lets parcellite reset the selected region.
+  Report relative-origin position of the cursor to CPR sequence.
+
+ver 3.2.0
+* Support framebuffer on NetBSD.
+* Support 1 bpp framebuffer.
+* Support sixel graphics and wall pictures on 1 and 8 bpp framebuffer.
+(See http://www.youtube.com/watch?v=djbEw0G_LMI and http://www.youtube.com/watch?v=5IH1NYSVpHY)
+(Thanks to @tsutsuii san)
+* Add "use_urgent_bell" option which is equivalent to "bellIsUrgent" option of
+  xterm and support CSI ? 1042.
+* "only_use_unicode_font" and "not_use_unicode_font" options have an effect
+  on preedit and candidate characters of input method plugins.
+* Add "sound|visual" to the value of "bel_mode" option.
+* Enable to change "not_use_unicode_font" and "only_use_unicode_font" dynamically.
+* Add "box_drawing_font" option.
+* Support efont-unicode fonts for framebuffer.
+* Bug fixes:
+  Fix the bug which disabled some shortcut keys in FreeBSD/framebuffer.
+  Fix the bug which ignored the specified encoding of "default_server" option
+  in opening a new pty.
+  Fix the bug which disabled sixel graphic images in framebuffer 16bpp.
+  Fix the bug which disabled inline pictures if use_dynamic_comb option is true.
+  Fix the bug of iBus input method plugin which disabled to erase the last
+  preedited character even if backspace key was pressed.
+  Fix the wrong height of the preediting cursor of the input method plugin
+  if the value of "inner_border" option isn't 2. (Thanks to @tsutsuii san)
+  Fix "use_dynamic_comb" option which didn't work anymore.
+  Fix the bug which disabled "UNUSED" key in ~/.mlterm/key.
+  Change key seuqences for modifier keys + cursor keys in application cursor key
+  mode. (e.g. Ctrl+Up: "\x1bO1;5A" -> "\x1b[1;5A") (Thanks to Mohammad Alsaleh)
+
+ver 3.1.9
+* Remove --enable-sixel option from configure, and add --disable-image option.
+  That is, support sixel graphics by default unless configure with
+  --disable-image option. (w3m-remoteimg (https://bitbucket.org/arakiken/w3m/downloads)
+  which doesn't depend on sixel graphics but on OSC 5379 show_picture also works
+  on mlterm by default.)
+* Separate SSH client functions to a dynamically loaded module (libptyssh)
+  in platforms except win32.
+* Treat key strings of "main" configuration file case-insensitively.
+  (Both encoding=utf8 and ENCODING=utf8 are available.)
+* Assign -M and -P options as the short options of --im and --clip.
+* Add "allow_change_shortcut" (--shortcut) option which enables "set_shortcut"
+  command of configuration protocol.
+* Bug fixes:
+  Fix the conflict of DCS(0x90) and the first byte of SJIS, GBK and so on.
+  Fix the bug which disabled input and output of pty when configuration program
+  such as mlconfig is started.
+  Encode input character masked with 0x80 to the character encoding of pty
+  if the value of mod_meta_mode option is 8bit. (Thanks to Vladimir Elisseev)
+  Fix the bug which disabled Alt+symbol and Control+@ in win32.
+  Fix the bug which disabled some shortcut key settings.
+
+ver 3.1.8
+* Support framebuffer on FreeBSD. (Experimental)
+* 'key' configuration file accepts Button1 - Button5.
+* Remove "conf_menu_path_1", "conf_menu_path_2", "conf_menu_path_3" and
+  "button3_behavior" options which are integrated to shortcuts.
+  [Migration]
+  (~/.mlterm/main)        (~/.mlterm/key)
+  conf_menu_path_1=... => Control+Button1="menu:..."
+  conf_menu_path_2=... => Control+Button2="menu:..."
+  conf_menu_path_2=... => Control+Button3="menu:..."
+  button3_behavior=... => Button3="exesel:..."
+* Add "set_shortcut" command to configuration protocol.
+* Bug fixes:
+  Fix the bug of DECCRA.
+  Fix the bug which broke input string of "ExecCmd" field of the connection dialog in win32.
+  Fix the bug which didn't redraw a part of full-width characters when window is exposed.
+  Enable to change "vertical_mode" option dynamically in framebuffer.
+
+ver 3.1.7
+* Support not only bmp formats but also other image formats by mlimgloader
+  (which requires gdk-pixbuf or GDI+) in win32.
+* "contrast", "gamma" and "brightness" options are available in win32.
+* Support CSI 22 0..2 t and CSI 23 0..2 t.
+* Support DCS ... { ... ST. (DECDLD)
+  (http://github.com/saitoha/vim-powerline/tree/drcs works!)
+* Assign U+10XXYY like drcsterm to DRCS (ESC ( SP XX YY)
+  (0x40 <= XX <= 0x7e, 0x20 <= YY <= 0x7f)
+  (See http://github.com/saitoha/drcsterm)
+* Remove "title" from configuration protocol.
+* Support alpha values of icon files if mlterm is built without
+  --with-imagelib=gdk-pixbuf option.
+* Support UTF8 text for setting the window title by OSC 0 or OSC 2 in win32.
+* Add --disable-use-tools option (which disables external tools) to configure.
+* Support alpha mask of sixel graphics.
+* Support uim and kbd plugin in framebuffer.
+* Bug fixes:
+  Fix the bug of "button3_behavior" option rejecting "mlclient ..." command.
+  Fix the incorrect parsing of font names which contain digit characters like
+  "Courier 10 Pitch" which was regarded as 10-point size "Courier" font.
+  Adjust the pty size to the screen size in creating a new pty by Ctrl+F2 etc
+  in framebuffer.
+  Revive "contrast", "gamma" and "brightness" options of mlterm built without
+  --with-imagelib option in Linux.
+  Fix segfault in starting mlterm with --pic option in framebuffer.
+  Fix the malfunction of cursor keys in mlcc in cygwin. (Thanks to saitoha san)
+  Fix the bug of saving or restoring cursor in OSC ? 1047 h or OSC ? 1047 l.
+  Exit mlcc to avoid segfault if OSC 5380 doesn't return anything.
+  Fix the bug of unloading fonts which are still used in framebuffer.
+
+ver 3.1.6
+* Support ":[Percentage]" format for font-fb.
+  (e.g. ISO8859_1=/../font.pcf:100)
+* Support gzipped pcf fonts in framebuffer.
+* Support 3 byte rgb color sequence.
+  (<ESC>[38;2;<r>;<g>;<b>m and <ESC>[48;2;<r>;<g>;<b>m)
+* Support DECCRA(<ESC>[...$v) and DECERA(<ESC>[...$z).
+* Add --altbuf / "use_alt_buffer" option which is equivalent to
+  "titeInhibit" of xterm.
+* Add --colors / "use_ansi_colors" option which is equivalent to
+  "colorMode" of xterm.
+* Add --exitbs / "exit_backscroll_by_pty" option.
+* -Y option converts unicode line drawing characters (U+2500 etc) to dec
+  special ones in order to show them correctly with a unicode font which
+  contains double-width glyphs or no glyphs for line characters.
+* Update unicode property table (generated from UnicodeData.txt and
+  EastAsianWidth.txt) to version 6.2.0.
+* "blink_cursor" option is available for libvte.
+* Remove "add_picture" and "remove_picture" commands from configuration
+  protocol, and add "show_picture" command to it.
+* Change key sequences in term_type=mlterm
+  (application cursor key mode is off)
+  XK_HOME: \x1bOH -> \x1b[H   XK_END : \x1bOF -> \x1b[F
+* Change key seuqences in term_type=rxvt.
+  (application cursor key mode is off)
+  XK_HOME: \x1b[7~ -> \x1b[H  XK_END : \x1b[8~ -> \x1b[F
+  (application cursor key mode is on)
+  XK_HOME: \x1bOH -> \x1b[7~  XK_END : \x1bOF -> \x1b[8~
+* Bug fixes:
+  Fix the bug of showing incorrect glyphs of large fonts like unifont.pcf.
+  Fix the infinite loop in the failure of executing the command specified with -e option.
+  Fix the compilation error in linking gdk-pixbuf-2.0. (SF topic #6234829)
+  (Thanks to Lotus Shih and rabin_y)
+  Fix the bug of incorrect input of 'A' - 'Z' keys in win32.
+  Fix the memory leak of scrollbar views.
+
+ver 3.1.5
+* Support framebuffer on Linux. (Experimental)
+  (See doc/en/README.fb or doc/ja/README.fb in detail.)
+* Support "?" of OSC 4, 10 and 11.
+* Support CSI 14 t and CSI 18 t.
+* Break the binary compatility of extra scrollbars and pixmap_engine
+  with the ones before 3.1.4.
+* Add "update_all" to the configuration protocol.
+* Add k5 entry for ~/.mlterm/termcap.
+* Bug fixes:
+  Fix the incomplete hebavior of double- or triple-clicking and dragging.
+  (Thanks to Andi Cristian Serbanescu)
+
+ver 3.1.4
+* Support 0x90...0x9c format for sixel graphics sequence.
+* Change the file where sixel graphics sequence is stored temporarily
+  from ~/.mlterm/picture.six to ~/.mlterm/[tty name].six.
+* Add k1, k2, k3 and k4 entries for ~/.mlterm/termcap.
+* Change key sequences in term_type=xterm.
+  XK_F1:     \x1b[11~ -> \x1bOP
+  XK_F2:     \x1b[12~ -> \x1bOQ
+  XK_F3:     \x1b[13~ -> \x1bOR
+  XK_F4:     \x1b[14~ -> \x1bOS
+* Support remote image files via network protocols supported by GVfs.
+  (e.g. mlterm -pic http://....)
+* Use CSI ? 8428 instead of CSI ? 8840. (Thanks to saitoha san)
+* Bug fixes:
+  Fix conflicting types of kik_utmp_new. (Thanks to KATO Masashi san)
+  Erase wrap line attributes completely in clearing lines.
+  (Thanks to Andi Cristian Serbanescu)
+  Enable PAGE_DOWN shortcut (which doesn't anything) when it reaches the bottom.
+  (Thanks to Andi Cristian Serbanescu)
+  Fix freeze in scrolling by CSI r. (Thanks to koie san)
+  Fix the problem which always replaces the 2nd or later sixel graphics with
+  the 1st one if mlterm is compiled with --with-imagelib=gdk-pixbuf option.
+  (Thanks to saitoha asn)
+  Fix the problem of reverting back to selecting one character at a time
+  by dragging the pointer after double- or triple-clicking.
+  (Thanks to Andi Cristian Serbanescu)
+
+ver 3.1.3
+* Support OSC 5;0 and OSC 5;1.
+* Support CSI ? 8840 h, CSI ? 8840 l and CSI ? 8840 n.
+  (see https://docs.google.com/document/d/1Dgq81J0eQEfjq3MR__O7VrbSVnatr9CCqMEITse9psk/edit?pli=1)
+* Support CSI SP q partially.
+* Support CSI [>4;2 m and CSI [>4;0m partially.
+  (Note that sequence from terminal is CSI <code>;<mod>u, not CSI 27;<mod>;<code>~.)
+* Add "ssh_keepalive_interval" option.
+* Add "ssh_x11_forwarding" option.
+* Add "use_bold_font" option.
+* Add "use_local_echo" option and CSI ? 9500 h / CSI ? 9500 l which enable or disable
+  local echo mode.
+* Merge SF patches:
+  #3529392 (Thanks to Ahmed El-Mahmoudy)
+  #3529386 (Thanks to Ahmed El-Mahmoudy)
+  #3530235 (Thanks to Ahmed El-Mahmoudy)
+* Bug fixes:
+  #3528838 (Thanks to Thomas Wolff)
+  #3528836 (Thanks to Thomas Wolff)
+  Fix a bug which wrongly keeps a screen which has failed to open.
+  Show characters in the center of cells whose width is larger than the default.
+  (Thanks to Andi Cristian Serbanescu)
+  Fix a bug which erases scrolled area. (Thanks to Andi Cristian Serbanescu)
+  Fix failure of opening pty in startup in MacOS 10.7.
+  (Thanks to saitoha san)
+
+ver 3.1.2
+* Support extended mouse tracking mode.
+  (CSI ? 1006 h and CSI ? 1006 l / CSI ? 1015 h and CSI ? 1015 l)
+* Support sixel graphics sequence partially. (DCS .. q .. ST)
+  (configure with --enable-sixel option.)
+* Support FocusIn/FocusOut event tracking. (CSI ? 1004 h and CSI ? 1004 l)
+* Support inputmethod/kbd in win32.
+* Add "add_picture", "remove_picture" and "close_pty" commands to
+  configuration protocol.
+* Add "hide_underline" option.
+* Merge SF patches:
+  #3524577 (Thanks to Ahmed El-Mahmoudy)
+  #3524578 (Install mlterm tools to $(libexecdir)/mlterm instead of $(libexecdir))
+  (Thanks to Ahmed El-Mahmoudy)
+  patch-ae in NetBSD pkgsrc x11/mlterm.
+* Bug fixes:
+  Fix a bug which disabled "bd_color" and "ul_color" options in reverse characters.
+  (Thanks to Andi Cristian Serbanescu)
+  Fix an ibus bug which causes segmentation fault if ibus daemon is not found.
+  Fix a bug which could cause failure of opening a new window over ssh connection.
+  Fix a bug which causes infinite loop if large OSC sequence is received.
+  (Thanks to Koie Hidetaka san)
+  Fix a bug which disabled mlconfig and mlterm-menu etc to start if multiple screens opened.
+
+ver 3.1.1
+* Fix a bug which caused segfault in 64bit Linux.
+* Enable to change 0-15 colors by OSC 4 sequence.
+* Enable to specify --sep, --button3, --clip, --restart and --logmsg options
+  for mlclient.
+
+ver 3.1.0
+* Support extended mouse tracking mode. (CSI ? 1005 h and CSI ? 1005 l)
+* Support "use_variable_column_width" and "letter_space" options in win32.
+* Support multiple numeric parameters of SM, RM, DECSET and DESRST sequence.
+  (Thanks to Iwamoto Kouichi san)
+* Support BiDi mirroring. (Thanks to Khaled Hosny)
+* Add "blink_cursor" option.
+* Add "inner_border" option.
+* Add "bd_color"(rxvt style) and "ul_color" options. (equivalent to colorBD and colorUL
+  options of xterm and rxvt.)
+* Add "cipher_list" for ssh connection.
+* Add java version. (experimental)
+* Add VT52 emulation. (configure with --enable-vt52 option.)
+* Remove IIIMF plugin.
+* Bug fixes:
+  SF Bug #2878878 (Thanks to Kusanagi Kouichi san)
+  SF Bug #3481552 (Thanks to Kobayashi Hiroaki san)
+  SF Bug #3487163 (Thanks to raghavkrishna)
+  SF Bug #3509743 (Thanks to Thomas Wolff)
+  SF Bug #3509744 (Thanks to Thomas Wolff)
+  SF Bug #3512067 (Thanks to phcoder)
+  Fix a bug which didn't clear margin area after visual bell.
+  Fix a bug which disabled scrolling in vertical mode in win32.
+  Fix a bug which disabled wheel mouse in win32.
+  Fix a bug of reverse-video algorithm of highlighted cursor or selected text.
+  (Thanks to Andi Cristian Serbanescu)
+
+ver 3.0.11
+* Support CSI 8 t and CSI 4 t sequence partially.
+* Change the file to output messages by --logmsg option
+  from ~/.mlterm/msg[pid].log to ~/.mlterm/msg.log.
+* If ~/.config/mlterm exists, use it as a user config directory instead of ~/.mlterm.
+* Support VtePty partially.
+* Support mod_meta_mode option in win32.
+* Support combination of Control+key in win32.
+* Bug fixes:
+  Fix a bug which erased border of candidate or status screen of uim or kbd.
+  SF Bug #3464878 (Thanks to Daniel Lublin)
+
+ver 3.0.10
+* Fix a problem which could cause error in loading a picture file.
+* Merge SF patches:
+  #3459267 (Thanks to Kusanagi Kouichi san)
+
+ver 3.0.9
+* Add auto-restart feature. ("auto_restart" option)
+* Support OSC 52 sequence which is allowed by "allow_osc52=true" in ~/.mlterm/main
+  or SWITCH_OSC52 shortcut key.
+* -V option is no longer necessary (and not automatically turned on) to show
+  indic characters.
+* Improve performance of cairo module and libvte.
+* Improve processing key events of ibus.
+* Support iBUS 1.4.
+* Add experimental support for GTK+-3.0. (configure --with-gtk=2.0|3.0)
+* Reverse behavior of "alpha" option.
+* Add "alpha" box to mlconfig.
+* Bug fixes:
+  Fix strange behavior in selecting indic characters.
+  Fix a libvte's problem which gets gnome-terminal not to be resized even if font size is changed.
+  Fix a problem which disabled hinting of font metrics in cairo.
+  Fix a problem which could cause segv in selecting region.
+  Revive "Brightness", "Contrast" and "Gamma" boxes of mlconfig.
+
+ver 3.0.8
+* Change default value of "use_ind" option from true to false.
+* Merge SF Patches:
+  #3412453 (Thanks to Ahmed El-Mahmoudy)
+* Bug fixes:
+  Fix wrong origin setting by CSI ? 6 l. (Thanks to Konosuke Watanabe san)
+  Fix a problem which causes segmentation fault if both -J and -bi options are specified.
+
+ver 3.0.7
+* Support bracketed paste mode. (CSI ? 2004 h , CSI ? 2004 l)
+* Support Button-event and Any-event mouse tracking.
+  (CSI ? 1002 h , CSI ? 1002 l , CSI ? 1003 h , CSI ? 1003 l)
+* Support scp using libssh2.
+  (Add "SSH SCP" front-end to mlconfig and "mlscp.sh" command line tool.)
+* Support DEC Special characters in win32. ("Tera Special" font is necessary.)
+* Support application escape mode. (CSI ? 7727 h , CSI ? 7727 l)
+* Support OSC 10, OSC 11 and OSC 12.
+* Add "logging_msg" option whose default value is true.
+* Support dynamic loading of BiDi and Indic modules.
+* Support dynamic loading of xft and cairo modules.
+* Integrate OSC 5384 - 5391 to OSC 5379 - 5383 and drop OSC 5382.
+* Change format of "select_pty", "search_prev", "search_next"  "snapshot" in  
+  OSC 5379 sequence as follows.
+  select_pty=<pty dev name> => select_pty <pty dev name>
+  search_prev=<pattern> => search_prev <pattern>
+  search_next=<pattern> => search_next <pattern>
+  snapshot=<encoding name>:<file name> => snapshot <file name> <encoding name>
+* Support mlconfig in connecting a ssh server by libssh2.
+* Improve the way of determining width of cairo fonts.
+* 'make uninstall' is available.
+* Other bug fixes:
+  Fix a problem which causes leak of graphic context resource in libvte.
+  Fix a problem which can minimize window in some themes in win32. (Thanks to Iwamoto Kouichi san)
+  Fix wrong position in receiving WM_MOUSEWHEEL event in win32. (Thanks to Iwamoto Kouichi san)
+  Fix illegal mouse reports if mouse goes outside the window. (Thanks to Iwamoto Kouichi san)
+  Fix double free in bidi rendering. (Thanks to NODA, Kai san)
+  Remove "-lvte" in linking libvte.so.
+
+ver 3.0.6
+* Support cairo for text rendering. (Experimental)
+  (See doc/en/README.cairo in detail.)
+* Support searching text in terminal screen. (Add "mlsearch.sh" tool.)
+* "CSI < r", "CSI < s" and "CSI < t" sequences are supported.
+* Improve cursor movement in bi-direction text.
+* Improve compatibility of libvte. (Gtkterm2, evilvte and sakura work.)
+* Ignore all spaces at the end of lines in selecting text regardless of their
+  fg/bg colors.
+* Support unicode indic characters (using ISCII fonts though). (Experimental)
+* Other bug fixes:
+  Fix a mistake which disabled configuration in $prefix/etc/mlterm in libvte.
+
+ver 3.0.5
+* Fix a problem of failing in compilation in gtk/ in the system where
+  vte isn't installed.
+* Fix a problem that may overwrite genuine libvte.so by mlterm's one in
+  installation without intension.
+* Support "ssh_public_key" and "ssh_private_key" options.
+
+ver 3.0.4
+* Add support for libssh2. (Experimental)
+* Support "use_unicode_property" option.
+* Support "not_use_unicode_font" option in indian characters of unicode.
+  (libind is required.)
+* Mlimgloader is possible to avoid to build if you don't specify it
+  as a value of configure's --with-tools option.
+* Merge SF patches:
+  #3243508 (Thanks to Ahmed El-Mahmoudy)
+  #3243231(partially) (Thanks to Kusanagi Kouichi san)
+* Other bug fixes:
+  Fix an error in setting "iBus" from mlconfig. (Thanks to shitamo san)
+  Fix wraparound failure if terminal column size is 100.
+  Fix compilation failure of mlimgloader with gdk-pixbuf1.
+  Fix compilation failure in win32.
+  Fix an error in opening a new pty by mlclient(x) which uses configuration protocol.
+  SF Bug #3280196 (Thanks to Yoshiaki Kasahara san)
+
+ver 3.0.3
+* Add support for iBus. (Experimental)
+* Even if gdk-pixbuf is not linked to mlterm (--with-imagelib=gdk-pixbuf
+  option is not specified in configure), wall picture, icon picture
+  and pixmap_engine are supported by an external program (mlimgdisplay)
+  which uses gdk-pixbuf.
+* Support "wall_picture" option partially (BMP format alone) in win32.
+* Support palette settings in libvte.
+* libvte uses dpi of gdk for xft font instead of manually calculated one
+  by DisplayWidthMM (,which can return wrong value in vmware) etc.
+* Unsupported but valid formatted escape / CSI sequence is correctly ignored.
+  (Thanks to Iwamoto Kouichi san)
+* Support "use_clipboard" option which enables CLIPBOARD selection not only
+  PRIMARY selection.
+* Other bug fixes:
+  Fix wrong drawing of background of DEC Special characters. (Thanks to Iwamoto Kouichi san)
+  Unhighlight background of bold characters. (Thanks to Iwamoto Kouichi san)
+  SF Bug #3158963 (Thanks to Jyun-Yan You)
+  SF Bug #3053107 (Thanks to Nezmer, Thanks to Iwamoto Kouichi san)
+
+ver 3.0.2
+* Drop imlib, gdk-pixbuf1 and gtk-1.x support.
+* Add libvte compatible library using mlterm engine. (Experimental)
+* Support gnome-pty-helper. (configure with --enable-pty-helper option)
+* Support "alpha" option in X11.
+* Add "depth" option.
+* Support "rgba:RR/GG/BB/AA" format to specify rgba color in 32-bit depth.
+* Add "bidi_mode" option.
+* Add "letter_space" option.
+* Support execution of command like "mlclient -e w3m" in "button3_behavior" option.
+* Other bug fixes:
+  "ESC [ r" and "ESC c" reset scrolling region. (Thanks to Iwamoto Kouichi san)
+  SF Bug #3072833 (Thanks to Andreas Metzler)
+  SF Bug #3051467 (Thanks to David Kolovratnik)
+  SF Bug #3014219 (Thanks to Khaled Hosny)
+
+ver 3.0.1
+* Improvements for performance of changing 256 colors by
+  "\x1b]4;N;rgb:RR/GG/BB\x07" sequence. (Thanks to Konosuke Watanabe san)
+* Support "ESC[9Nm" and "ESC[10Nm" sequences.
+* Add --button3/button3_behavior option. (If "menu1" is specified, pressing
+  button3 shows conf_menu_path_1 program (mlterm-menu) like gnome-terminal.)
+* Add "Copy" & "Paste" menus to mlterm-menu.
+* Improvements for compatibility with xterm about RGB of system colors.
+* Add 'col_size_of_width_a' to configuration protocol. (doc/en/PROTOCOL)
+* Merge SF patches:
+  #2988801, #2987646 (Thanks to Ahmed El-Mahmoudy)
+* Other bug fixes:
+  SF Bug #2818015(partly),#2818018 (Thanks to Thomas Wolff)
+
+ver 3.0.0
+* Support 256 colors. (Thanks to Shinichiro Hamaji san)
+* Character convertion tables are separated from libmkf library.
+* Support win32(Windows 2000-XP) native GUI.
+  ('--with-gui=win32' in mingw, msys and cygwin)
+* Support font and color configuration protocol.
+  (doc/en/PROTOCOL.font,PROTOCOL.color)
+* Change 'aafont' format as follows. (Elements in parentheses are optional.)
+  [Family]-[Encoding](:[Percentage])
+  => [Family]( [Weight] [Slant] [Size]-[Encoding]:[Percentage])
+* Add 'DEFAULT' key which specifies fonts used by default
+  for font configuration files.
+* Add --maxptys option.
+* Add 'mlclient', 'mlclientx', 'static_backscroll_mode' and 'type_engine' to
+  configuration protocol. (doc/en/PROTOCOL)
+* Add 'mlclientx' command.
+* Merge SF patches -
+  #1574764 (Thanks to Christian Biere)
+  #        (Thanks to Frederic Heulin)
+  #2879800 (Thanks to Kouichi Kusanagi san)
+* Other bug fixes:
+  SF Bug #1999220 (Thanks to Christian Biere)
+
+ver 2.9.4
+* Arabic translation of mlconfig [Khaled Hosny]
+* Selected region can be expanded by right-clicking [minami]
+  (Thanks to ssakane)
+* New config key string "title" to allow change pty title [minami]
+* Set DISPLAY correctly for ptys opened by -P option [nokada] (SF Bug #1534313)
+* Fixed compile errors with gcc 4.3 [mfabian]
+* Fixed a potentiol off-by-one bug [mfabian] (Thanks to Dominique Leuenberger)
+* Fixed compile errors on biarch systems [Kenshi Muto] (Debian Bug #396532)
+* Plugged file-desctiptor leaks [Christian Biere] (SF Patch #1576044)
+* Made "restore cursor" work properly with alternate screens [minami]
+  (SF Bug#1472143)
+* Fixed broken handling of Atom [Kusanagi Kouichi]
+* Other bug fixes:
+ - Debian BUG #329194 [David Kolovratnik]
+ - SF Bug #1568596 [nokada]
+ - SF Patch #1574241 [Christian Biere]
+
+ver 2.9.3
+* Improvements for compatibility with xterm:
+  - Log file handling [kzys]
+  - Function keys [seiichi] (Thanks to Konosuke Watanabe)
+  - Sequence for setting scroll region [seiichi]
+    (Thanks to SHIOTA Shoichi and Takashi SHIRAI)
+  - Behavior of saving/restoring cursor [minami]
+    (Thanks to Thomas Dickey for suggestions)
+  - Termcap and Terminfo [minami, seiichi]
+  - Turn off mouse position reporting by a "reset" sequence [minami]
+    (Debian Bug #55637)
+* Improvement build prosess for cross-compiling [minami]
+* Workaround for missing rgb.txt [minami]
+* Updated documents [kzys, minami, seiichi]
+* Bug fix for broken selection requester [minami]
+* Added support for SCIM-1.4.x [seiichi]
+* Removed support for SCIM-1.0.x [seiichi]
+* Removed support for uim-0.x.x [seiichi]
+* Hebrew mapping table for "kbd" input method [seiich]
+* Revided a scroll caching mechanism [seiichi] (SF Bug #1161050)
+* Suppressed a check for libxpg4 of FreeBSD [seiichi]
+  (Thanks to SHIOTA Shoichi and MANTANI Nobutaka)
+* Fixed a bug of alignment of full width chars when variable column width is
+  enabled [minami] (Thanks to Oibane)
+* Vietnamese translation for mlconfig [Pham Thanh Long]
+* Other Bug fixes:
+  - SF Bug #1206515 [Takeshi Hakamata]
+  - SF Bug #1161055 [seiichi]
+  - Debian Bug #302231 [Andreas Jochens]
+  - Debian Bug #313970 [Jens Seidel]
+  - Debian Bug #350590 [seiichi]
+  - SUSE Bug #105320 [mfabian]
+
+ver 2.9.2
+* [SECURITY] Fixed possible integer overflow.
+  Overview  : If a large image file is specified as a background image,
+              mlterm may access invalid memory.
+  Affected  : mlterm 2.5.0--2.9.1 configured with gdk-pixbuf support
+  Solution  : Update to mlterm-2.9.2.
+* Improvement for mouse tracking feature. [minami]
+* New '--iconpath' option and 'icon_path' key for per-window icon setting.
+  [minami]
+* New '--kill' option for mlclient. [minami]
+* Revived termcap file. [seiichi]
+* Xterm-like color scheme for cursor and selection. [minami]
+  (Thanks to Ian Ward)
+* SCIM input method plugin (Experimental) [seiichi]
+* Updated documents. (#1110868) [mfabian, minami, seiichi]
+* IIIMF X aux object handling. [seiichi]
+* Implemented some xterm private esc sequences (1047/1048/1049). [minami]
+* Fixed a shortcut key bug [minami] (Thanks to Yusuke Sakai)
+* Bug fixes for input method plugins [Kenichi Handa, Etsushi Kato]
+* Other bug fixes including #1081111 and #1048321 [mfabian, minami, seiichi]
+
+ver 2.9.1
+* Fixed a segfault caused by broken hash table. (#1061470) [seiichi]
+* Fixed a segfault when mlclient has bool option. (#1069725) [minami, seiichi]
+* Workaround for a segfault of uim-prime. [seiichi]
+* Some improvements for m17n-lib support. [seiichi]
+* Updated w3mmlconfig. [seiichi]
+* A couple of fixes in configure scripts. [minami, seiichi]
+* Minor improvement to allow signal handling to be old POSIX compliant. [minami]
+* Horizontal candidate window for input methods. [seiichi]
+* Non-interactive mode of mlcc. [minami]
+* man-page of mlcc. [minami]
+* A lot of cleanups for mlconfig to get rid of compiler warnings. [minami]
+* Fixes for missing locale files in mlterm.spec. (#1072304) [seiichi]
+
+ver 2.9.0
+* Improvement of borderless mode using _MOTIF_WM_HINTS [minami]
+* Fixed a selection bug with KDE klipper. [minami]
+* GTK+2 migration in mlconfig/mlterm-menu [minami]
+* New option '--type' to select the rendering engine for drawing fonts [karaki]
+* Fixed a bug when moving cursor to out of the screen. [minami]
+* Fixed a bug in mod_meta_mode = 8bit. [minami]
+* Fixed a bug that crashed mlterm by changing font size [minami]
+* Fixed a bug in stream pty on 64bit arch. (Debian BTS #226654) [minami]
+* Fixed a bug of 'mlclient -e' [MURANO Naoki <nao@futurex.org>]
+* mlconfig lists scrollbars in user's configuration directory and system
+  directory. [kubota]
+* New external tool 'mlterm-zoom' [kzys]
+* Update man [kubota, mfabian, minami, seiichi]
+* Fixed a bug that crashed mlterm when invalid value was specified with
+  --fsrange option [mfabian]
+* Fixed a bug that crashed mlterm when resizing a window over and over.
+  [seiichi]
+* Verbose message for devpts problem of Linux (Debian BTS #257765) [seiichi]
+* Fixed a bug with DEC special character in using xft. [minami]
+* Fixed a bug in selecting ISCII text. [karaki]
+* Support uim. (Experimental) [seiichi]
+* Support IIIMF. (Experimental) [seiichi]
+* Support input method of m17n-lib. (Experimental) [seiichi]
+* Support INCR type transfer of ICCM selection protocol. (Debian BTS #248087)
+  [minami]
+* Fixed incorrect mapping for KOI8-U <-> UCS4. (Debian BTS #267631)
+  [Eugeniy Meshcheryakov <eugen@univ.kiev.ua>]
+* A lot of improvements for terminfo [minami]
+* Fixes for strange behavior of VT emulation [minami, seiichi]
+* Fixed a bug that XIM could not be used with multiple displays. [seiichi]
+* Fixed a bug that the preedit area of XIM became invisible in the maximized
+  window. [seiichi]
+* Cleanups and refactorings for ml_* APIs [karaki]
+* New svg icons [Tobias Kieslich <tobias@justdreams.de>]
+
+ver 2.8.0pl1
+* New '--borderless' option [karaki]
+* After options saved by 5382 or 5383 protocol, new terminals start
+  with the new options. [karaki]
+* New configuration protocol 'snapshot' [karaki]
+
+ver 2.8.0
+* Added contrib/scrollbar/pixmap_engine, which eases adding your original scrollbars
+  to mlterm.
+* Shrunk used memory if many font names specified in ~/.mlterm/*font files.
+* Added tool/viewsfml.
+* Garbage multi-byte characters were often left in a screen. Fixed.
+* Partially ported kiklib to MS Windows.
+* Added -%,--logseq,logging_vt_seq option.
+* Revivied mlterm configuration protocol 5380, added mlcc and w3mmlconfig again.
+* Supported window grouping.
+* ml_char_t is 64bit in LP64, not 96bit.
+* Fixed many bugs, cleaned many codes, and updated documentations.
+
+ver 2.7.0
+* Supported pty switching in the same window.(see doc/ja/README.ja in detail for the Japanese.)
+* Supported koi8-t,georgian-ps,cp1251 and cp1255. 
+* Gettextized mlconfig.
+* Improved 'apply','cancel' etc buttons in mlconfig.
+* Mlconfig now can save configuration changes to ~/.mlterm/main.
+* Added mlterm-menu which starts by Ctrl+Right.
+* Forbidden 5380 protocol(doc/en/PROTOCOL) for some security issues, 
+  and removed mlcc, mlconf_curses and w3mmlconfig as a result of it.
+* Fixed many bugs, cleaned many codes, and updated documentations.
+
+ver 2.6.0
+* Window icon is supported and icon_path option is added.(Thanks to Minami Hirokazu san)
+* Fixed critical bugs around bce support.
+* Fixed incorrect size hints bug.(Thanks to Sato Seiichi san)
+* XDND is supported.(Thanks to Minami Hirokazu san)
+* mlconfig improved.(Thanks to Kubota Tomohiro san)
+* contrast/gamma options are supported.
+* HOME/END keys are supported.
+* metakey=[mod1-mod5,meta,alt,super,hyper] option is supported.
+* TERM=mlterm is supported and doc/term/mlterm.{ti|tc} are added.
+  (Thanks to Minami Hirokazu san)
+* And many minor bugs are fixed.
+
+ver 2.5.0
+* gdk-pixbuf as well as imlib is supported.(Thanks to Minami Hirokazu san)
+* mlterm can be built in other directories than the source tree.
+  (Thanks to Nakada Nobuyoshi san)
+* BCE is supported.
+* mlterm is separated into vt100 core functions(mlterm/) and x window system 
+  specific functions(xwindow/), and mlterm window can be revived even if
+  it is destroyed by a window manager.
+* UCS4 is used internally even if --enable-ucs4 option is not specified.
+* <KEY>=<OUTPUT STRING> format is supported in key config file.
+* mlcc is added. (Thanks to Minami Hirokazu san)
+* extra scrollbar plugins(athena,motif,mozmodern,next) are added.
+  (Thanks to Sato Seiichi san)
+* 16 color support.
+* And many minor bugs are fixed.
+
+ver 2.4.0
+* #RRGGBB format is supported for specifying fg/bg color.
+* All color names defined in rgb.txt are available for specifying fg/bg color.
+* Bidi processing is improved for practical use.(Thanks to Nadim Shaikli)
+* Even if console applications don't support character combining, -J/--dyncomb
+  option enables them to show combining characters correctly.
+* Shortcut keys for scrolling which are not compatible with xterm are disabled
+  by default. -q/--extkey option enables them.
+* And many minor bugs are fixed.
+
+ver 2.3.0
+* Vertical view(both right to left and left to right) is supported.
+* Max number of pty windows is increased to 32.
+* Most settings of scrollbar(position,type,color etc) can be dynamically changed.
+* Number of extra dots between lines can be specified.
+* Brightness of wall picture and transparent background can be adjustied.
+* Mlterm can work as a daemon process , and mlclient which is a front end of mlterm
+  server is added.
+* Mlterm can handle multiple display connections.
+* utmp,wtmp is supported by utemper , login/logout functions , or directly 
+  operating BSD style utmp,wtmp files.
+  (utemper support is contributed by Mike Fabian , and login/logout one is by
+  Minami Hirokazu san. Thanks!)
+* Transparent background by _XROOTPMAP_ID(on kwin,icewm etc) is supported.
+* and many minor bugs are fixed.
+
+ver 2.2.0(2002/01/29)
+* variable length column is supported.
+* ISCII support codes are imported(but is not still supported formally).
+* fribidi 0.10.0 is supported.
+* Full Reset button is added to mlconfig.
+* color fading is supported.
+* big5 unstandard characters can be converted to and from ucs4.
+* cursor form is changed when window is focused or unfocused.
+* Background of color-reversed characters is drawn with fg color event under wall paper 
+  or tranparent mode.
+* ESC ] 20 ; pt BEL sequence is supported.
+* mlterm configuration protocol is decided and implemented.
+* w3mmlconfig(w3m local-CGI) is contributed by Sakamoto Hironori san.
+* mlconf_curses(perl + curses) is contributed by Minami Hirokazu san.
+* etc/{font|vfont|aafont|vaafont} format is changed.
+  (Dynalab font can be shown correctly by using this extension)
+* some characters of CP932 based true type fonts couldn't be shown , but fixed.
+* CP932 gaiji characters (IBM , NEC , NECIBM) <=> UCS conversion is supported.
+* and many minor bugs are fixed.
+
+ver 2.1.0(2001/12/29)
+* Big5 and koi8 copy&paste problem is fixed.
+* Bidi rendering and Arabic shaping are supported.
+* BIG5HKSCS is supported.
+* most of vttest items are passed.
+* processing encodings of copy&paste text is improved.
+* mlconfig is improved.(e.g. it works asynchronous with mlterm itself)
+* mlterm icons(doc/icon/) are contributed by Kubota Tomohiro san:)
+* XIM processing is improved.
+* and many minor fixes/improvement.
+
+2001/5/12 development started

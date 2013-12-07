@@ -1,0 +1,1285 @@
+comment -*- mode: text -*-
+comment $Id$
+
+* mltermとは
+  Multi Lingual TERMinal の略です。
+
+* コンパイル方法
+  $ ./configure
+  $ make
+
+  o 必要なもの
+    基本的な機能は、libc / Xlibがあれば動きます。
+    多言語処理機能の多くは、自前でもってますので、OS のサポートがなくても、ほと
+    んどの機能は使えます。
+    (たとえば、libc に ja_JP.UTF-8 ローケールがなくても、ja_JP.eucJP ローケール
+    があれば、UTF-8 エンコーディングの端末に日本語入力できる、など)
+
+    アンチエイリアスフォントを利用する場合は、
+    XFree86 4.0.2 以上
+    freetype 2.0.2 以上
+    が必要です。
+
+    壁紙を貼るには、gdk-pixbuf (GTK+ 2.x 以上) が必要です。
+
+    gtk+ で作られた設定変更ツール (mlconfig, mlterm-menu) を使用する場合は、
+    GTK+ (2.x 以上) が必要となります。
+    (mlterm 本体にはリンクしません)
+
+    libvte compatible library を利用する場合は、GTK+ (2.x 以上) が必要です。
+
+    Unicode の Bidi レンダリングには、Fribidi 0.9.x 以上(?) が必要です。
+
+    ssh2 client として使用する場合は、libssh2 (http://www.libssh2.org) が必要です。
+
+    これらは、すべて、configure 時に有無をチェックします。
+
+  o configure オプション
+    --prefix
+      インストールプレフィクス
+
+    --disable-dl-table
+      文字変換テーブルや文字プロパティテーブルを動的にロードせず、
+      libmkf に静的にリンクします。
+      
+    --without-map-table
+      文字変換テーブルを組込みません。
+      この場合、UNICODE <=> 各種文字集合の変換等を扱えなくなります。
+
+    --without-prop-table
+      文字プロパティテーブルを組み込みません。
+      この場合、結合文字や BIDI 等を扱えなくなります。
+
+    --with-gui
+      GUI ライブラリとして xlib / win32 / fb のいずれを使用するか指定します。
+
+    --with-imagelib=(gdk-pixbuf)
+      mlterm 本体に gdk-pixbuf をリンクし、壁紙やアイコンの画像を扱えるようにし
+      ます。
+      このオプションを使用しない場合、--with-tools オプションで mlimgloader (外
+      部プログラム)をインストールしていれば、mlimgloader を使用して画像表示を行
+      います(mlterm 本体に gdk-pixbuf をリンクしなくても、画像表示が可能です。)。
+
+    --with-libltdl
+      モジュールの動的ローディングに libltdl を使用します。
+
+    --with-type-engines=(xcore|xft|cairo)
+      テキストレンダリングエンジンを指定します。
+      (旧来の --enable-anti-alias オプションは、--with-type-engines=xcore,xft
+      と同義です。)
+
+    --disable-dl-type
+      type engine モジュールの動的ローディングを無効にし、mlterm 本体にリンクする
+      ようにします。
+
+    --enable-fribidi
+      Fribidi を用いて Bidi レンダリングを行ないます。
+
+    --enable-ind
+      インド諸語の表示を行います。
+
+    --disable-dl-ctl
+      BiDi 及び インド諸語を表示するためのモジュールの動的ローディングを無効にし、
+      mlterm 本体にリンクするようにします。
+
+    --enable-ssh2
+      libssh2 (http://www.libssh2.org) を用いて ssh サーバに接続できるようにします。
+      なお、共通鍵暗号方式として camellia を使用したい場合や SSH agent forwarding
+      を行いたい場合は、https://bitbucket.org/arakiken/libssh2/downloads にある
+      camellia branch の libssh2 をダウンロードしてインストールしてください。
+
+    --without-pthread
+      ssh サーバとの (doc/en/PROTOCOL の scp コマンドによる) secure copy において
+      pthread を使用しません。
+
+    --enable-utmp
+      utmp に対応します。
+
+    --enable-debug
+      デバッグバージョンをビルドします。
+
+    --enable-optimize-redrawing
+      行の再描画処理を高速化します。(但し、w3m-img で副作用が出ます)
+
+    --with-scrollbars
+      scrollbar/ 又は contrib/scrollbar/ 以下の指定されたスクロールバーをビルド
+      します。
+
+    --with-tools
+      tool/ 又は contrib/tool/ 以下の指定されたツールをビルドします。
+
+    --disable-use-tools
+      tool/ 又は contrib/tool/ 以下のツールを一切ビルドせず、これらのツールを呼
+      び出す機能を mlterm 本体から削除します。
+
+    --disable-dnd
+      XDnD プロトコルによるドラッグアンドドロップサポートを無効にします。
+
+    --disable-kdb
+      kbd (アラビア語/ヘブライ語/インド諸語用インプットメソッド)を無効にします。
+
+    --enable-uim
+      uim をサポートします。libuim が必要です。
+
+    --enable-m17nlib
+      m17n library が提供するインプットメソッドをサポートします。
+      m17n-lib と m17n-db が必要です。
+
+    --enable-scim
+      SCIM (Smart Common Input Method platform) をサポートします。
+      libscim が必要です。
+
+    --enable-ibus
+      iBUS (Intelligent Input Bus) をサポートします。
+      libibus が必要です。
+
+    --enable-pty-helper
+      gnome-pty-helper をサポートします。(BSD style pty のシステムでは無効です。)
+      なお、gnome-pty-helper は ${libexecdir}/ ディレクトリに配置する必要があり
+      ます。
+
+    --with-gtk=(2.0|3.0)
+      使用する GTK+ のバージョンを指定します。
+
+    --enable-vt52
+      VT52 エミュレーション機能をサポートします。
+
+    --disable-image
+      壁紙、アイコン、擬似透過及び Sixel graphics といった画像処理関連の機能を全
+      て無効にします。
+
+    --disable-shared
+      共有ライブラリを構築しません。
+
+    --disable-static
+      静的ライブラリを構築しません。
+
+    --with-libtool=[path]
+      libtool を自動生成せず、システムのlibtoolを使うよう指定します。
+
+* 主な機能
+  o アンチエイリアス
+    フォントのアンチエイリアス表示をサポートしています。
+    これには、X の Xrender extension に対応した Xft or cairo を利用しています。
+
+    なお、Xft、cairo、通常の X フォントのどれを使うかは、動的に切替え可能です。
+
+  o 壁紙、背景透過
+    壁紙を貼ったり背景を擬似的に透過させることができます。
+
+  o マルチPTY
+    単一プロセス中から、--maxptys オプションで指定した上限数(デフォルトでは 32)
+    までの pty セッションを立ち上げることができます。
+    Ctrl+F2(デフォルト)で、新しい pty セッションを立ち上げることができます。
+    -@ オプションで、mlterm 起動時に立ち上げる ウィンドウの数を指定できます。
+    Ctrl+F1(デフォルト)で、新しいウィンドウを立ち上げることができます。
+    Ctrl+F3(NEXT)、Ctrl+F4(PREV)で、ウィンドウ上で表示する pty セッションを切り
+    替えることができます。
+    Ctrl+左ボタン(デフォルト)では、mlterm-menu が起動し、現在 background にある
+    pty に切り替えることができます。
+    (see doc/ja/README.pty)
+
+  o マルチXIM
+    複数の XIM を動的に切替えて使用することができます。
+    たとえば、端末側が UTF8 エンコーディングで、kinput2 と Ami を切替えながら、
+    日本語ハングル混在の文章を入力できます。
+    (see doc/ja/README.xim)
+
+  o インプットメソッド プラグイン
+    uim、m17n library、scim、ibus に対応しています。プラグインとして使用
+    時だけロードされます。マルチXIMと同様に動的変更が可能で端末のエンコーディン
+    グに依存しません。
+
+  o プロポーショナルフォント
+    プロポーショナルフォントも使用できます。
+    この場合、-V オプションで、コラム幅を可変にするか、固定にするかを指定するこ
+    とができます。
+    プロポーショナルフォントをコラム幅固定で使用する場合、一文字ずつ描画して無理
+    矢理隙間を埋めますので、描画パフォーマンスが低下します。
+
+  o 縦書き表示
+    右から左、左から右の縦書き表示をサポートしています。
+    通常日本語の縦書き表示をするためには、-G cjk オプションを指定してください。
+    (see doc/ja/README.tate)
+
+  o mlterm configuration protocol
+    設定変更のための専用シーケンスを定義しています。
+    それを使うことによっても、設定の動的変更が可能です。
+    (see doc/en/PROTOCOL, doc/ja/README.confapp)
+
+  o mlterm server
+    mlterm は daemon process として動作することができます。
+    その場合、X なしでの起動や、複数のディスプレイ接続が可能です。
+    mlterm server が起動していれば、mlclient をフロントエンドとして使用すること
+    で、端末ウィンドウを開けます。
+    (see doc/ja/README.server)
+
+  o vte compatible library
+    mlterm の機能(一部制限あり)を、(ほぼ) vte 互換の API で wrap したライブラリ
+    (libvte.so.9) を提供しています。
+    システムにインストールされている libvte.so.9 を置きかえることにより、
+    gnome-terminal や roxterm 等の中で、mlterm を動作させることができます。
+    GTK+ (2.x 以上) が必要となります。(gtk/INSTALL 参照)
+
+  o ssh2 client
+    ssh2 client として直接 ssh2 server に接続することができます。
+    libssh2 (http://www.libssh2.org) が必要となります。
+    なお、共通鍵暗号方式として camellia を利用する場合は、
+    https://bitbucket.org/arakiken/libssh2/downloads から、camellia branch の
+    libssh2 をインストールしてください。
+    (例 mlterm(mlclient) --serv ssh://user@host:22)
+
+  o auto-restart
+    バグ等により mlterm が実行不能となった場合でも、(できるだけ)その中で動いてい
+    るコンソールアプリケーションを引き継いだ mlterm を自動的に再起動し、コンソー
+    ルアプリケーションを保護します。
+
+  o local echo mode
+    キー入力に対する処理結果がコンソールアプリケーションから返ってくる前に、
+    前もって画面に表示することにより、体感的な応答速度を向上します。
+
+* 設定
+  o 設定ファイル
+    ${SYSCONFDIR}/mlterm 以下、および、~/.mlterm 以下におかれます。
+    前者が先に読まれ、次にそれを後者で上書きできます。
+
+    main     ... 引数オプションで上書き可能な、プリミティブな設定
+    font     ... フォント設定
+    vfont    ... 可変長コラム幅使用時のフォント設定
+    aafont   ... Xft or cairo用フォント設定
+    vaafont  ... Xft or cairo用かつ可変長コラム幅使用時のフォント設定
+    tfont    ... 縦用フォント指定
+    taafont  ... Xft or cairo用かつ縦用フォント指定
+    color    ... 色定義
+    key      ... ショートカットキー定義
+    termcap  ... termcapもどき
+    xim      ... XIM ローケール指定
+
+    o main
+      KEY=VALUE
+
+      行頭の # で、その行をコメントアウトできます。
+
+      ** で囲まれている方のがデフォルト値です。
+      (#) のついているオプションは、設定画面からの動的変更が可能です。
+
+      -- Window 関連 --
+      o display
+        X の DISPLAY を指定
+
+      o depth
+        Visual の深さ (8, 16, 24, 32)
+        なお、depth が 32 の場合、--alpha オプション又は背景色として
+        "rgba:RR/GG/BB/AA" と指定することで、半透明にすることができます。
+
+      o parent_window (*0*)
+        親 Window の Window ID を指定
+
+      o geometry
+        表示位置を指定
+
+      o app_name  (*mlterm*)
+        アプリケーション名
+
+      o title  (*mlterm*)
+        タイトル名
+
+      o icon_name  (*mlterm*)
+        アイコン名
+
+      o icon_path
+        アイコン画像のファイル名
+
+      o screen_width_ratio  (*100*) (#)
+        実スクリーンの横幅(百分率)
+
+      o screen_height_ratio  (*100*) (#)
+        実スクリーンの縦幅(百分率)
+
+      o inner_border (*2*)
+        Window の inner border (0-224)
+
+        "H,V"形式で値を指定すると、横方向と縦方向で別々に inner border の値を指
+        定できます。
+
+      -- Terminal 関連 --
+      o use_login_shell  (true/*false*)
+        ログインシェルを使うかどうか
+
+      o termtype (*xterm*)
+        端末タイプ
+        なお、termtype=mlterm とする場合の terminfo 及び termcap のデータベース
+        は、それぞれ doc/term/mlterm.ti 及び doc/term/mlterm.tc にあります。
+
+      o max_ptys (*32*)
+        同時に立ち上げることができる pty の最大数 (32の倍数で指定)
+
+      o startup_screens (*1*)
+        起動時に立ち上げるウィンドウの数
+
+      -- Encoding 関連 --
+      o encoding  (*auto*) (#)
+        エンコーディングの指定
+
+        サポートしているエンコーディングは、以下の通りです。
+
+        ISO-8859-[1-11], ISO-8859-[13-16], TIS-620(same as ISO-8859-11),
+	KOI8-[RUT], ISCII_(ASSAMESE|BENGALI|GUJARATI|HINDI|KANNADA|MALAYALAM|
+	ORIYA|PUNJABI|ROMAN|TAMIL|TELUGU), VISCII, TCVN5712, GEORGIAN_PS,
+	CP125[0-8], CP874, EUC-JP, EUC-JISX0213, Shift_JIS, Shift_JISX0213,
+	ISO-2022-JP[1-3], EUC-KR, UHC, JOHAB, ISO-2022-KR, GB2312 (EUC-CN), GBK,
+	GB18030, ISO-2022-CN, HZ, EUC-TW, BIG5, BIG5HKSCS, UTF-8, AUTO
+
+        '-' , '_' および、大文字小文字は無視されます。
+
+        (注)
+        o pty から流れてくる文字列のエンコーディングを自動認識することはできませ
+          ん。
+        o TIS620,TCVN5712,JISX0213 の合成用ダイアクリティカルマーク、および
+          UNICODE の結合クラス結合文字については、結合文字を動的合成できますの
+          で、それらを使う場合は、-m オプションをつけて、結合文字サポートを有
+          効にしてください。
+        o KOI8_T, GEORGIAN_PS, CP125[0-8], CP874 については、専用のフォントは存
+          在せず、Unicode 経由でしか利用できないため、必ず -u オプションを併用し
+          てください。
+        o AUTO を指定した場合、nl_langinfo -> LC_ALL -> LC_CTYPE -> LANGを順番に
+          調べ、適当なエンコーディングを選択します。
+          ENCODING 指定を行なわなかった場合も同様です。
+
+      o use_bidi  (*true*/false) (#)
+        BiDi レンダリングを行う。
+        (必要ない場合は false に設定することを推奨します。)
+
+      o bidi_mode  (*normal*/cmd_l/cmd_r)
+        BiDi レンダリングの方法を指定する。
+                +---------------------+
+        logical |$ ls -l ABC DEF      |
+        normal  |$ ls -l FED CBA      |
+        cmd_l   |$ ls -l CBA FED      |
+        cmd_r   |      FED CBA -l ls $|
+                +---------------------+
+                (大文字は RTL 文字を示します。)
+
+      o use_ind  (true/*false*) (#)
+        インド諸語の表示を行う。
+	エンコーディングが UTF-8 の場合は use_bidi が false の場合のみ有効。
+
+      o use_combining  (*true*/false) (#)
+        結合文字を処理する
+
+	なお、
+	・ENCODING が UTF-8 で use_bidi 又は use_ind が true の場合、
+	・ENCODING が ISCII_XXX の場合、
+	・use_dynamic_comb が true の場合は、
+	use_combining = false と設定していても、自動的に true に戻されます。
+
+      o use_dynamic_comb  (true/*false*) (#)
+        結合文字を動的に合成する
+
+        端末アプリケーションが結合文字をサポートしていない場合でも、結合文字を正
+        しく表示できるようにします。
+
+      o big5_buggy  (true/*false*)
+        Big5 CTEXT のバグ (XFree86 4.1.0 以前) に対応する
+
+      o col_size_of_width_a  (1/2) (#)
+        UNICODE の EastAsianWidth.txt の A プロパティのコラム数
+	デフォルト値は、ja_XX.XX locale 環境では 2 , その他の環境では 1 です。.
+
+      o vertical_mode  (*none*/cjk/mongol) (#)
+        縦表示のスタイルを指定
+
+        cjk は、右から左の縦表示、mongol は、左から右の縦表示です。
+
+      o use_vertical_cursor (true/*false*)
+        縦書き用カーソル
+
+        十字カーソルキーを、cjk 縦表示の場合であれば、
+        右 => 下
+        左 => 上
+        上 => 右
+        下 => 左
+        に割当て直します。
+
+      o use_multi_column_char  (*true*/false)  (#)
+        1 文字で複数コラムを占有する文字の処理を行なう
+
+        いわゆる全角文字を処理するかどうかを指定します。 w3m-m17n を縦表示で使
+        用する場合には、このオプションを無効にしてください。
+
+      o receive_string_via_ucs  (true/*false*) (#)
+        copy and paste で受け取った XCOMPOUND TEXT や、XIM から入力された文字列
+        を、一旦 UNICODE を経由してから端末エンコーディングに変換する
+
+      o auto_detect_encodings
+        文字コードを自動判定する場合の候補とするエンコーディング
+        (カンマで区切って複数指定可)
+
+      o use_auto_detect
+        文字コードの自動判定を行う
+
+        あらかじめ、auto_detect_encodings オプションで候補とするエンコーディング
+        を指定しておく必要があります。
+
+      -- Font 関連 --
+      o fontsize  (*16*) (#)
+        フォントサイズ
+        なお、例えば、(tv)font 設定ファイルで、
+        DEFAULT=-kochi-mincho-medium-*--14-*-
+        のように、特定のサイズ(上記例では 14 pixel)のフォントをデフォルトとして
+        指定した場合には、fontsize オプションを変更しても、フォントサイズは(上記
+        例では 14 pixel のまま)変わらなくなるため、注意してください。
+
+      o font_size_range  (*6-30*)
+        変更可能なフォントサイズの範囲
+
+        フォーマットは以下のとおり。
+        [min]-[max]
+
+        e.g.)
+        font_size_range = 10-24
+        10 から 24 ポイントまで変更できるようになります。
+
+      o step_in_changing_font_size (*1*)
+        larger,smaller ボタンでのフォントサイズの変化量(*1*)
+
+      o use_variable_column_width  (*false*) (#)
+        可変長コラム幅を使用する
+
+	なお、vertical_mode が cjk 又は mongol に設定されている場合は、
+	自動的に false に設定されます。
+
+      o type_engine (*xcore*/xft/cairo)
+        xcore フォントか xft フォントのいずれを使用するかを指定する。
+        なお、use_anti_alias = true にした場合は、自動的に type_engine = xft と
+        なります。
+      
+      o use_anti_alias  (true/false/*default*) (#)
+        アンチエイリアスフォントを強制的に使用する。
+        なお、このオプションを指定しなかった場合又は use_anti_alias = default
+        にした場合、アンチエイリアスするかどうかは、システムの設定によります。
+
+      o use_cp932_ucs_for_xft  (*true*/false)
+        Xft 又は cairo 使用時、JISX0208 の Unicode 変換に CP932 の変換テーブル
+        を使う
+
+        多くの Unicode フォント(東風、Dynalab フォント)は、CP932 の変換テーブ
+        ルを元に、JISX0208 用のフォントを格納しています。「〜」などが表示され
+        ないという場合は、このオプションを有効にしてください。
+
+      o not_use_unicode_font  (true/*false*)
+        UNICODE を適当な文字集合にmapして、UNICODE フォントを使わずに表示する
+
+      o unicode_noconv_areas
+        not_use_unicode_font を true とした場合でも、このオプションで指定した範
+        囲の文字は、常に UNICODE のまま表示する。
+        範囲の指定方法は次のとおり。
+
+        e.g.) U+1234-5678,U+0123-4567
+
+      o only_use_unicode_font (true/*false*)
+        すべての文字を UNICODE フォントだけを使って表示する
+
+      o use_unicode_property (true/*false*)
+        UTF-8 以外のエンコーディングの文字について、対応する UNICODE のプロパテ
+	ィ(文字幅等)を適用する。
+
+      o iso88591_font_for_usascii (true/*false*)
+        US_ASCII の表示には、必ず ISO8859-1 フォントを使用する
+
+      o box_drawing_font (unicode/decsp/*noconv*)
+        罫線文字について、常に Unicode フォント又は DEC Special フォントで表示す
+        る。
+
+      o compose_dec_special_font (true/*false*)
+        DEC special (特殊文字を除く) のグリフを動的に合成
+
+        このオプションが指定された場合、"font" ファイルで DEC_SPECIAL として
+        指定したフォントは無視されます。
+
+      o use_bold_font (*true*/false)
+        ボールドフォントを使用する。
+
+      -- Appearance 関連 --
+      o use_transbg (true/*false*) (#)
+        擬似的な背景透過を行う。
+
+      o use_scrollbar (*true*/false)
+        スクロールバーをつける
+
+        scrollbar_mode , scrollbar_view_name オプションは、これが true の場合の
+        み有効です。
+        2.2.0 以前との互換オプションです。
+
+      o scrollbar_mode (none/*left*/right) (#)
+        スクロールバーのつけ方
+
+      o scrollbar_view_name (*simple*/sample/sample2/sample3/next/motif/athena/mozmodern) (#)
+        使いたいスクロールバーの名前
+
+      o fg_color  (*black*) (#)
+        端末画面の前景色
+
+        fg_color,bg_colorに指定できる値は、rgb.txt で定義された色名、#RRGGBB、
+        #RRGGBBAA、rgb:RR/GG/BB 又は rgba:RR/GG/BB/AA 形式の色指定です。
+
+        e.g.)
+        fg_color = blue
+        fg_color = #aabbcc
+
+      o bg_color  (*white*) (#)
+        同背景色
+
+      o sb_fg_color (#)
+        スクロールバーの前景色
+
+      o sb_bg_color (#)
+        同背景色
+
+      o cursor_fg_color (#)
+        カーソルの前景色
+
+      o cursor_bg_color (#)
+        同背景色
+
+      o bd_color
+        ボールド文字を描画するのに使用する色
+
+      o ul_color
+        アンダーラインの代わりに文字に色を付けるのに使用する色
+
+      o hide_underline (true/*false*)
+        アンダーラインを描画しない。
+
+      o wall_picture  (*なし*) (#)
+        壁紙にする画像ファイルのパス
+        なお、use_transbg が true となっている間は、壁紙の表示は行なわれません。
+
+      o fade_ratio  (*100*) (#)
+        Focus から外れたときの前景/背景色の Fade 率(百分率)[0-100]
+
+      o brightness  (*100*) (#)
+        背景画像(透過処理含む)の輝度調整(百分率)[0-100]
+
+      o contrast (*100*) (#)
+        背景画像(透過処理含む)のコントラスト(百分率)[0-100]
+
+      o gamma (*100*) (#)
+        背景画像(透過処理含む)のガンマ値(百分率)[0-100]
+
+      o alpha (*255*)
+        背景画像使用時及び透過処理時に、bg_color で指定した色と背景をブレンドす
+        る比率[0-255]
+        なお、背景画像又は擬似的な背景透過を使用する際、このオプションがデフォ
+        ルト値 (255) のままだった場合は、自動的に 0 に変更されます。
+        depth オプションの説明も参照してください。
+      
+      o line_space  (*0*) (#)
+        行間の広さ[0-255]
+        高さが不揃いの複数のフォントを使用する場合は、このオプションで行間を適宜
+        調整してください。
+
+      o letter_space (*0*) (#)
+        字間の広さ[0-255]
+        幅が不揃いの複数のフォントを使用する場合は、このオプションで字間を適宜
+        調整してください。
+        なお、-V オプションと同時に指定すると無効になります。
+        また、type_engine=xcore で letter_space に 1 以上の値を指定すると、
+        描画パフォーマンスが大幅に低下します。
+
+      o borderless (true/*false*)
+        Window Manager の飾りを外す。
+
+      o blink_cursor (true/*false*)
+        カーソルを点滅させる。
+
+      -- その他 --
+      o locale
+        指定したローケールに setlocale() します。
+
+      o use_xim  (*true*/false)
+        XIM を使う
+
+        これを false にすると、XIM は一切使用できなくなります。
+
+      o input_method
+        使用するインプットメソッド
+        フォーマットは以下のようになります。
+
+        [input method];[option1]:[option2]
+
+        [input method] にインプットメソッド(xim/uim/m17nlib/scim/kbd)を
+        指定し、必要であれば ":" で区切ってオプションを列挙します。
+
+        各インプットメソッドのオプションは以下の通りです。
+
+        xim の場合: xim:[xim server]:[locale]
+        [xim server] で XIM サーバー名(kinput2, Ami, xcin など)を指定します。
+        指定しなかった場合は、環境変数 XMODIFIERS で指定した XIM サーバーが
+        使用されます。[locale] には XIM サーバーのローケールを指定します。指定し
+        なかった場合はシステムのローケールが使用されます。use_xim オプションで
+        xim を無効にした場合、xim を指定しても無視されます。
+
+        uim の場合:
+        uim:[conversion engine]
+        [conversion engine] に変換エンジン(anthy, prime, hangul2など)を指定しま
+        す。指定しなかった場合は uim のデフォルト変換エンジンが使用されます。
+
+        m17nlib の場合:
+        m17nlib:[language id]:[input method]
+        [language id] には ISO-639 に従って言語(ar, zh, ja など)を指定します。
+        指定しなかった場合はシステムのローケールから取得した言語が使われます
+        [input_method] で使用するインプットメソッド(anthy, py など)を指定します
+        指定されなかった場合は [language id] のデフォルトインプットメソッドが使
+        用されます。m17nlib を指定した時は key ファイルで IM_HOTKEY を指定して
+        ください。
+
+        scim の場合:
+        scim (オプション無し)
+
+        ibus の場合：
+        ibus:[conversion engine]
+        [conversion engine] に変換エンジン(anthy, prime, hangul2など)を指定しま
+        す。指定しなかった場合は ibus のデフォルト変換エンジンが使用されます。
+
+        kbd の場合:
+        kbd:[mode]
+        [mode]には、isciixxx、arabic 又は hebrew を指定します。
+        なお、[mode]を省略した場合、ISCII モードの時は ISCII 配列、それ以外では
+        ローケールが ar_* の場合はアラビア語配列、he_* の場合はヘブライ語配列の
+        キーマッピングになります。
+        kbd を指定した時は key ファイルで IM_HOTKEY を指定してください。
+
+      o tabsize  (*8*) (#)
+        タブ幅
+
+      o logsize  (*128*) (#)
+        ログの行数
+        unlimited を指定するとログの行数は無制限になります。
+
+      o word_separators  (*" ,.:;/|@()[]{}"*)
+        単語の区切り文字を指定
+
+        マウスのダブルクリックで、単語選択する際に使用されます。
+
+      o mod_meta_key (*none*/mod1/mod2/mod3/mod4/meta/alt/super/hyper)
+        Meta キーとして使用するキーを指定
+
+      o mod_meta_mode  (none/esc/*8bit*) (#)
+        Meta キーを押下した時の挙動
+
+        esc の場合は"0x1b"を出力し、8bit の場合は入力文字の8ビット目をたてます。
+
+      o bel_mode  (none/*sound*/visual/sound|visual) (#)
+        BEL(0x7)を受け取った時の挙動
+
+        soundの場合はビープ音で、visualの場合は画面ブランクでBELを通知します。
+        sound|visualを指定すると、両方行います。
+
+      o use_urgent_bell (true/*false*)
+        フォーカスを失なった画面上でBEL(0x7)を受け取った時に、ユーザに警告する。
+
+      o daemon_mode (*none*/blend/genuine)
+        daemon process となるかどうか
+
+        blend の場合、最後の端末ウィンドウが閉じられた段階で、daemon process
+        は終了します。
+        一方、genuine の場合、最後の端末ウィンドウが閉じられた後も、また、X
+        が終了したのちも、daemon process として動作しつづけることが可能です。
+
+      o use_extended_scroll_shortcut (true/*false*)
+        スクロールのショートカットキーとして、PAGE_UP,PAGE_DOWN ショートカット以
+        外に、Up,Down,j,k,Prior,Next キー及び、SCROLL_UP,SCROLL_DOWN ショートカ
+        ットを有効にするかどうか
+
+      o init_str
+        pty をオープンしたときに、端末に送られる初期化文字列を指定する。
+
+      o click_interval (*250*)
+        ダブルクリックの間隔(ミリ秒)
+
+      o static_backscroll_mode (true/*false*)
+        バックスクロール時に端末出力があっても画面が流れないようにする。
+
+      o exit_backscroll_by_pty (true/*false*)
+        バックスクロール中に、端末出力があった場合、バックスクロールを抜ける。
+
+      o logging_vt_seq (true/*false*)
+        pty から流れてくる VT sequence を ~/.mlterm/[device].log に記録する。
+
+      o use_clipboard (true/*false*)
+        領域選択した文字列をコピーする際に PRIMARY だけでなく CLIPBOARD も使用する。
+
+      o logging_msg (*true*/false)
+        mlterm が出力するメッセージを ~/.mlterm/msg.log に出力する。
+
+      o default_server
+        ssh 等により直接ログインするサーバを指定する。
+	MinGW 又は --enable-ssh2 オプションでビルドした場合に有効。
+	値の形式は、(<protocol>://)(<user>@)<server>(:<port>)(:<encoding>)
+
+	例) mlterm --serv ssh://user@host:22:eucjp
+
+      o ssh_public_key (~/.ssh/id_rsa.pub (win32 では %HOMEPATH%\mlterm\id_rsa.pub))
+        ssh 接続の認証で使用する公開鍵のファイルを指定する。
+
+      o ssh_private_key (~/.ssh/id_rsa (win32 では %HOMEPATH%\mlterm\id_rsa))
+        ssh 接続の認証で使用する秘密鍵のファイルを指定する。
+
+      o cipher_list
+        ssh 接続で使用する共通鍵暗号を指定する。
+	(コンマ区切りで複数指定)
+
+      o ssh_keepalive_interval (0)
+        ssh 接続中に、指定した秒数ごとに、SSH_MSG_IGNORE を送信する。
+	(0 の場合は送信しない。)
+
+      o ssh_x11_forwarding (true/*false*)
+        ssh 接続で x11 forwarding を有効にする。
+
+      o allow_scp (false)
+        ssh 接続時に OSC 5379 scp を許可する。
+
+      o auto_restart (*true*/false)
+        SIGSEGV, SIGBUS, SIGFPE, SIGILL が発生した場合に、mlterm 内部の console
+        application (ssh 接続を除く。)を引き継いだ mlterm を起動し直す。
+
+        デバッグのため core dump を取得する場合は、必ず false にしてください。
+
+      o allow_osc52 (true/*false*)
+        OSC 52 sequence によるクリップボード(セレクション)へのアクセスを許可する。
+        なお、このオプションを動的に変更するには、"proto:allow_osc52=switch"
+        ショートカットキーを使用する必要があります。
+
+      o use_local_echo (true/*false*)
+        local echo mode を有効にする。
+
+      o use_alt_buffer (*true*/false)
+        Alternate screen buffer を有効にする。
+        xterm の "titeInhibit" 相当のオプションですが、"titeInhibit" とは、
+        true/false が逆になるので注意してください。
+
+      o use_ansi_colors (*true*/false)
+        ANSI color change escape sequences を有効にする。
+        xterm の "colorMode" 相当のオプションです。
+
+      o allow_change_shortcut (true/*false*)
+        OSC 5379 の "set_shortcut" による動的なショートカットキー定義を有効にす
+        る。
+
+      --- 廃止されたもの ---
+      o xim_open_in_startup  (*true*/false)
+        起動時に XIM を open するという機能でしたが、インプットメソッド関連
+        のオプションを input_method に統合したので廃止しました。
+        現在 input_method に xim を指定すると XIM は必ず open されます。
+        代替手段として --im=none を指定して、mlterm 起動後に mlconfig などから、
+        xim を指定するとすることで対応してください。
+
+    o font/vfont/aafont/vaafont/tfont/taafont
+      o DEFAULT            ... 下記文字集合ごとの指定がない場合のフォント
+      o DEC_SPECIAL        ... 罫線文字用のフォント
+      o ISO8859_N          ... ISO8859_Nフォント
+      o TIS620             ... TIS 620 フォント
+      o VISCII             ... VISCII フォント
+      o TCVN5712_3_1993    ... TCVN5712_3_1993 フォント
+      o ISCII_XXX          ... ISCII フォント(XXX は、ASSAMESE, BENGALI,
+                               GUJARATI, HINDI, KANNADA, MALAYALAM, ORIYA,
+			       PUNJABI, ROMAN, TAMIL, TELUGU のいずれか)
+      o KOI8_R             ... KOI8_R フォント
+      o KOI8_U             ... KOI8_U フォント
+      o JISX0201_ROMAN     ... JISX0201左面フォント
+      o JISX0201_KATA      ... JISX0201右面(半角カナ)フォント
+      o JISX0208_1978      ... JISX0208フォント(JISC6226_1978も可)
+      o JISX0208_1983      ... JISX0208フォント
+      o JISX0208_1990      ... JISX0208フォント
+      o JISX0212_1990      ... JISX0212(補助漢字)フォント
+      o JISX0213_2000_1    ... JISX0213_1フォント
+      o JISX0213_2000_2    ... JISX0213_2フォント
+      o KSX1001_1997       ... KSC5601_1987フォント(KSC5601_1987も可)
+      o GB2312_80          ... GB2312_80フォント
+      o GBK                ... GBKフォント
+      o BIG5               ... BIG5フォント
+      o HKSCS              ... HKSCSフォント
+      o CNS11643_1992_N    ... CNS11643_1992_Nフォント
+      o ISO10646_UCS4_1    ... UNICODEフォント(1カラム用)
+      o ISO10646_UCS4_1_FULLWIDTH ... UNICODEフォント(2カラム用)
+      o U+XXXX-XXXX        ... UNICODEフォント(指定した範囲。最大7個まで。)
+
+      (*) KOI8_T,GEORGIAN_PS,CP125[0-8],CP874 は -u オプションを指定して
+          Unicode フォントを使用する必要があります。
+          UHC,JOHAB は 自動的に KSX1001 フォントが使用されます。
+      (*) 通常全角文字として扱う文字集合については、
+          JISX0208_1983_HALFWIDTH
+          のように、後に "_HALFWIDTH" をつけると、一部の文字を半角文字として扱う場
+          合(--ucsprop オプションによって EastAsianWidth.txt で定義された文字幅
+          を強制する場合)のフォントを指定することができます。
+      (*) Unicode のインド諸語は、mlterm 内部で一旦 ISCII に変換され、ISCII_XXX
+          フォントにより表示されます。
+
+        それぞれのボールド体のフォントを指定したい場合には、
+        ISO8859_1_BOLD
+        のように、"_BOLD"をつけた名前で指定して下さい。
+	また、イタリックのフォントを指定したい場合には、
+	ISO8859_1_ITALIC
+	のようにしてください。
+	_BOLD_ITALIC のように両方指定することもできます。
+
+        フォーマットは、以下のようになります。
+
+        [default font name];[font size],[font name];[font size],[font name];...
+
+        [default font name] で、デフォルトのフォントを指定し、サイズごとにデフォ
+        ルトと異なるフォントを指定できます。
+        [default font name] に %d を含めておくと、そこにフォントサイズが入りま
+        す。
+
+        例えば、
+
+        ISO8859_1 = -kochi-mincho-medium-*--%d-*-iso8859-1;10,a10;
+
+        このように指定すると、10 point を除くすべてのサイズで東風フォントを使
+        用し、 10 point については、a10 フォントを使用することができます。
+
+        [font name] , [default font name] は、font , vfont(通常のXフォント)と、
+        aafont , vaafont(Xft or cairo用フォント) で異なります。
+
+        o font/vfont/tfont
+          (--with-gui=xlib の場合)
+          [XLFD(*)](:[percentage])
+          (--with-gui=win32 の場合)
+          [font family]( Bold Italic [font size]:[percentage])
+	  (--with-gui=fb の場合)
+	  [font file path]
+
+          (*) もしくは、fonts.aliasで定義している省略記法。
+
+        o aafont/vaafont/taafont
+          [font family]( Bold Italic [font size]-[font encoding]:[percentage])
+
+          -[font encoding] の前方に - を含む場合は \ によりエスケープする必要が
+          あります。
+
+          e.g.)
+          ISO8859_1 = Hoge Semi\-Condensed
+          
+          font size は、実際に表示するピクセルサイズであり、小数点数を指定する
+          こともできます。
+
+          e.g.)
+          ISO8859_1 = 12,Hoge 11.5
+          
+          percentage は、そのフォントのグリフを表示するに、フォントサイズの何
+          パーセント分の幅をとるかを指定します。
+          例えば、フォントサイズが 12 の場合に、percentage として 100 を指定す
+          ると、半角文字なら幅 6 , 全角文字なら幅 12 がとられます。
+
+          percentage 指定がない場合、通常の X フォントについては、そのフォントの
+          最大幅が、Xft or cairo フォントについては、'W'が収まるだけの幅がとられ
+          ます。
+
+          percentage は、微妙に大きさの異なるフォントを組み合わせる場合の微調
+          整や、フォントの最大幅、'W' の幅が大きすぎるようなプロポーショナルフォ
+          ントを使用する場合などに使います。
+
+          とくに、Dynalab フォントのように、'W' が全角幅で収められているフォン
+          トを使用する場合は、必ず適切な指定を行なってください。
+
+          e.g.)
+          JISX0208_1983 = Hoge:100;
+
+          但し、表示の際に基準となるフォント(US-ASCII相当のグリフを表示するフォ
+          ント) 以外のフォントの percentage 指定は無視され、できるだけ基準フォ
+          ントに合うような表示が優先されます。
+
+          また、縦用フォントは、デフォルトで、すべて全角幅となりますので、
+
+          ISO8859_1 = 10,a10:100;
+
+          のようにすると、a10 フォントを無理矢理横幅 10 point で表示します。
+
+          percentage 指定の結果、プロポーショナルフォントを固定幅で表示する場
+          合と同じ扱いになる場合があります。その際は、描画速度が低下しますので
+          注意してください。
+
+        vfont または、vaafont , taafont に、条件にあうフォントが見つからない場
+        合、それぞれ font , aafont が参照されます。
+
+        フォントが指定されていない文字については、mltermが適当に判断して表示し
+        ます。ただし、TCVN5712フォントについては、自動検索しませんので、
+        font/aafont にて指定するようにしてください。
+
+        ボールド体が指定されていない場合は、mediumフォントとして指定れたフォン
+        ト、もしくは、mltermが適当に見つけ出したmediumフォントを重ね打ちして、
+        それっぽくみせます。
+        ボールド体フォントとして、mediumフォントを指定してやれば、重ねうちはしま
+        せん。
+        また、アンチエイリアスフォントについては、いずれにせよ、重ねうちはしませ
+        ん。
+
+        DEFAULT を font, vfont 及び tfont で指定した場合は、XLFD フォント名の
+        末尾に文字集合ごとに適切な encoding を自動的に末尾に追記しますので、注意
+        してください。
+        また、DEFAULT を指定したフォント名は、Input Method で使用するフォント
+        (FontSet) には影響しません。
+
+        e.g.)
+        DEFAULT = -kochi-mincho-medium-*--%d-*-;12,-kochi-gothic-medium-*--12-*-
+        => フォントサイズ 13 で ISO8859_1 を表示する場合、
+           -kochi-mincho-medium-*--13-*-iso8859-1 となり、
+           フォントサイズ 12 で ISO8859_1 を表示する場合、
+           -kochi-gothic-medium-*--12-*-iso8859-1 となります。
+
+        DEC_SPECIAL は、罫線文字の含まれている iso8859-1 フォントを指定してくだ
+        さい。
+
+        GB18030 については、
+        1-byte char : US_ASCII
+        2-byte char : GBK
+        4-byte char : Unicode
+        フォントを使用します。
+
+        CP932 の外字(NEC特殊文字、NEC選定IBM拡張文字、IBM拡張文字)については、
+        Unicode に変換して、Unicode フォントを使用します。
+        この場合、記号文字など半角全角のあいまいな文字を表示するには、-ac 2
+	オプションをつけて mlterm を起動し、かつ、ISO10646_UCS4_1 に、記号文字が
+	全角になっている Unicode フォントを指定する必要があります。
+
+        X Input Method のフォントは、なるべく端末画面で使用されているそれと同じ
+        ものが使用されます。
+        アンチエイリアス中は、font , vfont から適当なフォントを探します。
+        ただし、縦用フォントについては、tfont , taafont ではなく、font で指定し
+        たフォントが使用されます。
+
+        なお、フォント指定については、Ctrl+右ボタンで表示される設定画面の
+        "フォント" タブの "Select" ボタンで選択することができます("Select" ボタン
+        を押下したときに、XLFD か Xft のどちらの選択画面が表示されるかは、"Xft"
+        チェックボックスがチェックされているかどうかによります。)。
+
+        例えば、"DEFAULT" として、
+        Font:       => fixed (misc)
+        Font Style: => medium [C]
+        Size:       => 14
+        を選択すると、次のように設定されます。
+
+        DEFAULT = -misc-fixed-medium-r-normal-*-14-*-*-*-c-*-
+        (この結果、fontsize オプションを変更しても常に 14 pixel のフォントが
+        表示されることになるため、注意してください。)
+
+        また、"ISO10646_1" として、
+        Font:       => fixed (misc)
+        Font Style: => medium [C]
+        Size:       => 20
+        を選択すると、次のように設定されます。
+
+        ISO10646_UCS4_1 = -misc-fixed-medium-r-normal--20-200-75-75-c-100-iso10646-1
+
+    o color
+      既存の色名の RGB 値を変更することができます。フォーマットは以下のとおり。
+
+      color_name = [red]-[green]-[blue]
+                   ([red],[green],[blue]は、それぞれ 16 bit 16 進数表記です)
+      color_name = #RRGGBB (RR,GG,BB は、それぞれ 8 bit 16 進数表記です)
+      color_name = rgb:RR/GG/BB or rgba:RR/GG/BB/AA
+      color_name = rgb:RRRR/GGGG/BBBB or rgba:RRRR/GGGG/BBBB/AAAA
+
+      色名の先頭に hl_ を付けると、16 色対応における強調色の RGB 値を指定でき
+      ます。
+      また、色名に 10進数の 17〜230,232〜255 の数値を指定すると、256 色対応
+      における各色の RGB 値を指定できます。
+
+    o xim
+      mlterm では、複数の XIM の動的切替えをサポートしています。
+      ここでは、そのために、各 XIM ごとのローケールを指定します。
+      ここでの設定は、設定画面に即座に反映されます。
+
+      たとえば、
+
+      kinput2 = ja_JP.eucJP
+      Ami = ko_KR.eucKR
+
+      このように指定することで、mlterm 自体が、zh_TW.Big5 ローケールで動いている
+      場合でも、Ami を ko_KR.eucKR で、kinput2 を ja_JP.eucJP ローケールで動かす
+      ことができるようになります。(つまり、それぞれの言語で入力できるようになる)
+
+    o key
+      ショートカットキーの定義
+
+      [SHORTCUT_KEY]=[OPERATION]
+
+      OPERATION は以下の通り
+
+      o IM_HOTKEY
+        m17nlib, kbd (アラビア語/ヘブライ後/インド諸語の入力メソッド)の入力モー
+        ド切替え。
+      o EXT_KBD(UNUSED)
+        アラビア語、インド諸語の mlterm 内蔵入力メソッドを起動、終了します。
+        (mlterm 2.8.0 以前 との互換オペレーション)
+      o NEW_PTY(Ctrl+F1)
+        OPEN_SCREEN と同じ。2.6.0 以降 obsoleted.
+      o OPEN_SCREEN(Ctrl+F1)
+        新しいPTYを、新しい画面上に開きます。
+      o OPEN_PTY(Ctrl+F2)
+        新しいPTYを、現在の画面上に開きます。
+      o NEXT_PTY(Ctrl+F3)
+        Background の PTY を現在の画面上に表示します。
+      o PREV_PTY(Ctrl+F4)
+        Background の PTY を現在の画面上に表示します。
+      o PAGE_UP(Shift+Prior)
+        ページアップ
+      o SCROLL_UP(Shift+Up)
+        スクロールアップ
+      o PAGE_DOWN(Shift+Next)
+        ページダウン
+      o SCROLL_DOWN(Shift+Down)
+        スクロールダウン
+      o INSERT_SELECTION(Shift+Insert)
+        セレクションのペースト
+      o "" で囲まれた文字列
+        文字列の出力
+
+      以下のオペレーションは 2.9.0 で廃止されました。
+
+      o XIM_OPEN(Shift+space)
+        XIM メソッドを Open します。
+        xim_open_in_startup が true に設定されている場合は、最初から Open され
+        ていますので、使われません。
+      o XIM_CLOSE(UNUSED)
+
+      SHORTCUT_KEY のフォーマットは以下の通り
+
+      (MASK+)KEY
+
+      キー割り当てしない場合は UNUSED としてください。
+      キーには、Button1, Button2, Button3, Button4, Button5 を指定することもでき
+      ます。
+
+      また、次の8つのマスク指定も可能です。
+
+      Control
+      Shift
+      Mod1
+      Mod2
+      Mod3
+      Mod4
+      Mod5
+      Mod  (Mod1Mask - Mod5Mask まですべてにマッチします)
+
+      e.g.)
+      Control+n=OPEN_SCREEN
+      Control+n を押下すると、新しい端末用ウィンドウを開きます。
+
+      "" で囲まれた文字列としては、'\x'から始まる16進数、'\n','\r','\e','\t'
+      が使えます。
+      また、"" で囲まれた文字列が、'proto:' から始まっている場合、以降の文字列を
+      doc/en/PROTOCOL の set プロトコル(の簡略版。key=value を ';' で区切って
+      複数指定)と解釈されます。
+      'exesel:' から始まっている場合は、以降の文字列をコマンドと解釈し、選択文字
+      列を引数として実行します。
+      'menu:' から始まっている場合は、以降の文字列を configuration program と解
+      釈して実行します。
+
+      e.g.)
+      Control+F1="proto:font_size=12;encoding=utf8"
+      => Control+F1 を押下すると、フォントサイズが 12、エンコーディングが utf8 に
+         なります。
+      Control+F2="exesel:mlclient -e w3m"
+      => Control+F2 を押下すると、"mlclient -e w3m 選択文字列" を実行します。
+      Control+F3="menu:mlterm-menu"
+      => Control+F3 を押下すると、mlterm-menu を実行します。
+
+    o termcap
+      termcapデータベースもどき
+      様々な TERM ごとに、その挙動を定義できます(なお、例えば、
+      TERM=xterm-256color の場合、本データベースの xterm にマッチします。)。
+      端末名 '*' で、デフォルトの設定を定義できます。
+
+      `\E' , `^A' などが使えます。
+      `\' のあとに8進数を指定する記法はサポートしていません。
+
+      o kD
+        delete キーを押下(ただし、Shift, Control 又は Mod キーと一緒に押下された
+        場合を除く。以下同じ。)したときのシーケンス
+        デフォルトでは、`\E[3~'
+      o kb
+        バックスペースキーを押下したときのシーケンス
+        デフォルトでは、`^H'
+      o kh
+        Application cursor key mode で、HOME キーを押下したときのシーケンス
+	デフォルトでは、'\EOH'
+      o @7
+        Application cursor key mode で、END キーを押下したときのシーケンス
+        デフォルトでは、`\EOF'
+      o k1, k2, k3, k4, k5
+        F1〜F5 キーを押下したときのシーケンス
+	デフォルトでは、それぞれ、`\EOP', `\EOQ', `\EOR', `\EOS', '\E[15~'
+      o ut
+        BCE を有効にするかどうかを指定します。
+        デフォルトでは、無効
+
+  o 引数オプション
+    (X) のついているオプションは、mlclient からは指定できません。
+
+    -h/--help(=bool)   : ヘルプ (X)
+    -v/--version(=bool) : バージョン情報(あまり信用できない:D) (X)
+
+    -#/--initstr=value : init_str
+    -%/--logseq        : logging_vt_seq
+    -$/--mc=value      : click_interval
+    -&/--borderless    : borderless
+    -*/--type          : type engine
+    -0/--crbg=value    : cursor_bg_color
+    -1/--wscr=value    : screen_width_ratio
+    -2/--hscr=value    : screen_height_ratio
+    -3/--contrast=value: contrast
+    -4/--gamma=value   : gamma
+    -5/--big5bug(=bool): big5_buggy
+    -6/--stbs(=bool)   : static_backscroll_mode
+    -7/--bel=value     : bel_mode
+    -8/--88591(=bool)  : iso88591_font_for_usascii
+    -9/--crfg=value    : cursor_fg_color
+    -@/--screens=value : startup_screens (X)
+    -A/--aa(=bool)     : use_anti_alias
+    -B/--sbbg=value    : sb_bg_color
+    -C/--ind(=bool)    : use_ind
+    -D/--bi(=bool)     : use_bidi
+    -E/--km=value      : ENCODING
+    -F/--sbfg=value    : sb_fg_color
+    -G/--vertical=value: vertical_mode
+    -H/--bright=value  : brightness
+    -I/--icon=value    : icon_name
+    -J/--dyncomb(=bool) : use_dynamic_comb
+    -K/--metakey=value : mod_meta_key
+    -L/--ls(=bool)     : use_login_shell
+    -M/--im=value      : input_method
+    -N/--name=value    : app_name
+    -O/--sbmod=value   : scrollbar_mode
+    -P/--clip(=bool)   : use_clipboard
+    -Q/--vcur(=bool)   : use_vertical_cursor
+    -R/--fsrange=value : font_size_range (X)
+    -S/--sbview=value  : scrollbar_view_name
+    -T/--title=value   : title
+    -U/--viaucs=value  : receive_string_via_ucs
+    -V/--varwidth(=bool): use_variable_column_width
+    -W/--sep=value     : word_separators (X)
+    -X/--alpha=value   : alpha
+    -Y/--decsp(=bool)  : compose_dec_special_font (X)
+    -Z/--multicol(=bool): use_multi_column_char
+    -a/--ac=value      : col_size_of_width_a
+    -b/--bg=value      : bg_color
+    -c/--cp932(=bool)  : use_cp932_ucs_for_xft (X)
+    -d/--display       : display
+    -f/--fg=value      : fg_color
+    -g/--geometry=value : geometry
+    -i/--xim(=bool)    : use_xim (X)
+    -j/--daemon=value  : daemon_mode (X)
+    -k/--meta=value  : mod_meta_mode
+    -l/--sl=value      : logsize
+    -m/--comb(=bool)   : use_combining
+    -n/--noucsfont(=bool) : not_use_unicode_font
+    -o/--lsp=value     : line_space
+    -p/--pic=value     : wall_picture
+    -q/--extkey(=bool) : use_extended_scroll_shortcut
+    -r/--fade=value    : fade_ratio
+    -s/--sb(=bool)     : use_scrollbar
+    -t/--transbg(=bool) : use_transbg
+    -u/--onlyucsfont(=bool) : only_use_unicode_font
+    -w/--fontsize=value : fontsize
+    -x/--tw=value      : tabsize
+    -y/--term=value    : term_type
+    -z/--largesmall=value : step_in_changing_font_size
+       --bdfont(=bool) : use_bold_font
+       --iconpath=value : icon_path
+       --bimode=value  : bidi_mode
+       --parent=value  : parent_window
+       --bd=value      : bd_color
+       --ul=value      : ul_color
+       --noul(=bool)   : hide_underline
+       --servlist=value : server_list
+       --serv=value    : default_server
+       --pubkey=value  : ssh_public_key
+       --privkey=value : ssh_private_key
+       --ciphlist=value : cipher_list
+       --x11(=bool)    : ssh_x11_forwarding
+       --csp=value     : letter_space
+       --ucsprop(=bool): use_unicode_property
+       --osc52(=bool)  : allow_osc52
+       --blink(=bool)  : blink_cursor
+       --border=value  : inner_border
+       --restart(=bool): auto_restart
+       --logmsg(=bool) : logging_msg
+       --loecho(=bool) : use_local_echo
+       --altbuf(=bool) : use_alt_buffer
+       --colors(=bool) : use_ansi_colors
+       --exitbs(=bool) : exit_backscroll_by_pty
+       --shortcut(=bool) : allow_change_shortcut
+       --boxdraw=value : box_drawing_font
+       --urgent(=bool) : use_urgent_bell
+       --locale=value  : locale
+       --ucsnoconv=value : unicode_noconv_areas
+       --ade=value     : auto_detect_encodings
+       --auto(=bool)   : use_auto_detect
+       --depth=value   : depth (X)
+       --maxptys=value : max_ptys (X)
+       --keepalive=value: ssh_keepalive_interval (X)
+
+    -e ... : 指定したコマンドを起動
+
+    o オプションは、以下のフォーマットを受け付けます。
+      (-E/--km,-J/--dyncombを例に)
+
+      -E=euc-jp
+      -E euc-jp
+      -km=euc-jp
+      -km euc-jp
+      --km euc-jp
+      --km=euc-jp
+
+      -J  (-J=trueと同じ)
+      -J=true
+      -J=false
+      -J true
+      -J false
+      -dyncomb  (-dyncomb=trueと同じ)
+      -dyncomb=true
+      -dyncomb=false
+      -dyncomb true
+      -dyncomb false
+      --dyncomb  (-dyncomb=trueと同じ)
+      --dyncomb=true
+      --dyncomb=false
+      --dyncomb true
+      --dyncomb false
+
+* 操作方法
+  o キーボード
+    [通常モード]
+    Shift-↑     ... バックスクロールモードへ移行しつつ上スクロール
+    Shift-PageUp ... バックスクロールモードへ移行しつつページアップ
+
+    [バックスクロールモード]
+    j/↓         ... 下スクロール(use_extended_scroll_shortcut が true のとき)
+    k/↑         ... 上スクロール(use_extended_scroll_shortcut が true のとき)
+    u/PageUP     ... ページアップ(use_extended_scroll_shortcut が true のとき)
+    d/PageDown   ... ページダウン(use_extended_scroll_shortcut が true のとき)
+    Shift-↑     ... 上スクロール
+    Shift+PageUp ... ページアップ
+    Shift+PageDown ... ページダウン
+    その他のキー入力 ... バックスクロールモードから通常モードへの復帰
+
+  o マウス
+    ドラッグすれば領域選択できます。
+    また、そのまま、スクロールすることもできます。
+
+    コンソールアプリケーションがマウスイベントを横取りしている場合は、Shift +
+    Button で領域選択できます。
+
+    Ctrl+左ボタン(ボタン1)で、メニューがでます。 
+    Ctrl+右ボタン(ボタン3)で、設定画面がでます。
+
+    スクロールバーは、マウスでドラッグすれば、スクロールされます。
+
+* 連絡先
+  mlterm-dev-ja ML(http://lists.sourceforge.net/lists/listinfo/mlterm-dev-ja)
+
+* 利用に際しての条件
+  BSDライセンスとします。詳細は附属のLICENCEファイルを参照。

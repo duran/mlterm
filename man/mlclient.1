@@ -1,0 +1,57 @@
+.\" mlclient.1   -*- nroff -*-
+.TH MLCLIENT 1 "2012-12-01"
+.SH NAME
+mlclient \- client for mlterm
+.SH SYNOPSIS
+.B mlclient
+.RB [\fIoptions\fP]
+.\" ********************************************************************
+.SH DESCRIPTION
+\fBmlclient\fR is a client for the \fBmlterm\fR(1) server (daemon).
+\fBmlterm\fR(1), an X terminal emulator, can be invoked
+as a daemon process which holds multiple sessions (shell process and other
+information like backlog).  \fBmlclient\fR can creat a new session
+or recall an existing session which had been disconnected from a window.
+.\" ********************************************************************
+.SH OPTIONS
+\fBmlclient\fR accepts most options of mlterm.
+Please read \fBmlterm\fR(1) for detail.
+
+Following options do \fBnot\fR work for \fBmlclient\fR:
+.TP
+\fB\-@\fR/\fB\-\-screens\fR,
+.TP
+\fB\-R\fR/\fB\-\-fsrange\fR,
+.TP
+\fB\-Y\fR/\fB\-\-decsp\fR,
+.TP
+\fB\-c\fR/\fB\-\-cp932\fR,
+.TP
+\fB\-i\fR/\fB\-\-xim\fR,
+.TP
+\fB\-j\fR/\fB\-\-daemon\fR, and
+.TP
+   \fB\-\-depth\fR
+.TP
+   \fB\-\-maxptys\fR
+.TP
+   \fB\-\-keepalive\fR
+.TP
+
+Following option is mlclient specific:
+.TP
+\fB\-P\fR/\fB\-\-ptylist\fR print pty list.
+.TP
+   \fB\-\-kill\fR kill a mlterm daemon.
+.\" ********************************************************************
+.SH SEE ALSO
+\fBmlterm\fR(1),
+\fBlocale\fR(7),
+\fBcharsets\fR(7),
+\fBUTF-8\fR(7), and
+\fBX\fR(7).
+.\" ********************************************************************
+.SH CONTACT
+Subscribe mlterm-dev-en ML
+(http://lists.sourceforge.net/lists/listinfo/mlterm-dev-en).
+
