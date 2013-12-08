@@ -1,0 +1,108 @@
+# Edit following 5 variables.
+JAVAC = javac # -source 1.5 -target 1.5
+CLASSPATH_win32 = .\;swt.jar
+CLASSPATH = .:swt.jar
+JAVA_HOME_win32 = /cygdrive/c/Program\ Files/Java/jdk1.7.0_02
+JAVA_HOME = /usr/lib/jvm/java-7-openjdk-i386
+SWT_JAR = /usr/lib/java/swt-gtk-3.7.2.jar
+
+# Don't edit anything below.
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+libdir = @libdir@
+sysconfdir = @sysconfdir@
+top_srcdir = @top_srcdir@
+top_builddir = @top_builddir@
+
+CC = @CC@
+LIBTOOL = @LIBTOOL@
+INSTALL = @INSTALL@
+CYGPATHW = @CYGPATHW@
+
+LIBDIR = $(DESTDIR)$(libdir)
+
+CFLAGS = @CFLAGS@ @KIK_CFLAGS@ @MKF_CFLAGS@ @SSH2_CFLAGS@ \
+	-DSYSCONFDIR=\"$(sysconfdir)\" -D_JNI_IMPLEMENTATION \
+	-I../kiklib/include -I../mkf/include -I$(top_srcdir)/mlterm -I. \
+	-I$(JAVA_HOME@WIN32TAG@)/include -I$(JAVA_HOME@WIN32TAG@)/include/win32 \
+	$(CFLAGS2@WIN32TAG@) $(CFLAGS_LOCAL)
+
+# for Cygwin
+CFLAGS2_win32 = -I/cygdrive/$(JAVA_HOME)/include -I/cygdrive/$(JAVA_HOME)/include/win32
+
+LIBTOOL_CC = $(LIBTOOL) --mode=compile $(CC) $(CFLAGS)
+LIBTOOL_LINK = $(LIBTOOL) --mode=link $(CC) $(CFLAGS)
+LIBTOOL_INSTALL = $(LIBTOOL) --mode=install $(INSTALL)
+
+TARGET_win32 = MLTermPty.dll
+TARGET = libMLTermPty.la
+
+CLASS = mlterm/MLTermPtyListener.class mlterm/MLTermListener.class \
+	mlterm/ConnectDialog.class mlterm/Style.class mlterm/RedrawRegion.class \
+	mlterm/MLTermPty.class mlterm/MLTerm.class mlterm/MLTermApplet.class \
+	mlterm/ConfirmDialog.class
+OBJ = MLTermPty.o
+
+VPATH = $(top_srcdir)/java
+
+all : swt.jar mlterm.jar
+
+sign :
+	jarsigner mlterm.jar mlterm
+	jarsigner swt.jar mlterm
+
+createkey :
+	keytool -genkey -keyalg rsa -alias mlterm
+
+swt.jar :
+	if test -e $(SWT_JAR) ; then cp $(SWT_JAR) swt.jar ; fi
+
+mlterm.jar : $(CLASS) $(TARGET@WIN32TAG@) manifest.mf
+	jar cmf manifest.mf mlterm.jar mlterm/*.class \
+		`find * -name "*.dll" -o -name "*.s*" -o -name "plink.exe"`
+
+$(TARGET_win32) : MLTermPty.h
+	$(CC) -Wl,--kill-at $(CFLAGS) -shared -o MLTermPty.dll \
+	$(top_srcdir)/java/MLTermPty.c ../mlterm/.libs/*.o ../kiklib/src/.libs/libkik.dll.a \
+	../mkf/lib/.libs/libmkf.dll.a -L/usr/local/lib @SSH2_LIBS_FOR_PROG@
+
+$(TARGET) : $(CLASS) MLTermPty.h $(OBJ)
+	$(LIBTOOL_LINK) -o $(TARGET) -s $(OBJ:.o=.lo) -rpath $(libdir) \
+	-avoid-version ../mlterm/*.lo ../kiklib/src/libkik.la ../mkf/lib/libmkf.la \
+	@SSH2_LIBS_FOR_PROG@
+	# .s? -> .so or .sl
+	cp .libs/*.s? .
+
+manifest.mf : $(TARGET@WIN32TAG@)
+	cp $(top_srcdir)/java/manifest.mf.in manifest.mf
+	files=`find * -name "*.dll" -o -name "*.s*" -o -name "plink.exe" | xargs | sed 's/ /;/g'` ; \
+	if test "$${files}" != "" ; then \
+		echo -n "Bundle-NativeCode: " >> manifest.mf ; \
+		echo $${files} >> manifest.mf ; \
+	fi
+
+.SUFFIXES : .java .class
+
+.java.class :
+	$(JAVAC) -classpath $(CLASSPATH@WIN32TAG@) -d . `$(CYGPATHW) $<`
+
+.SUFFIXES : .c .o
+
+.c.o :
+	$(LIBTOOL_CC) -c $<
+
+MLTermPty.h: mlterm/MLTermPty.class
+	javah -jni mlterm.MLTermPty
+
+clean :
+	rm -rf *.h $(OBJ) $(OBJ:.o=.lo) $(TARGET@WIN32TAG@) manifest.mf libMLTermPty.so \
+		mlterm/*.class mlterm.jar *core .libs
+
+distclean : clean
+	rm -f Makefile
+
+$(LIBDIR) :
+	mkdir -p $(LIBDIR)
+
+install : $(LIBDIR)
+	$(LIBTOOL_INSTALL) $(TARGET@WIN32TAG@) $(LIBDIR)

@@ -1,0 +1,191 @@
+comment -*- mode: text -*-
+
+How to build & install libvte compatible library using mlterm engine.
+
+* Requirements
+  o vte library and headers
+  o gtk+ 2.x or 3.x
+  o terminal emulators or other applications using libvte 
+    (gnome-terminal, roxterm, synaptic or etc)
+
+* Build
+  $ ./configure (--with-type-engine=cairo --with-imagelib=gdk-pixbuf ...)
+    (Xft and cairo are not required, but strongly recommended because it is
+    impossible to change font settings from preferences menu without them.
+    In addition, you should choose what gtk+ and pango installed to your
+    system depend on such as gdk-pixbuf.)
+  $ make
+  $ cd gtk ; make
+
+* Install (Replace official libvte)
+  $ cd kiklib ; make install
+  $ cd mkf ; make install
+  $ cd gtk ; make install
+  $ ln -sf [where libvte of mlterm is installed]/libvte.so.9.0.0 \
+	   [where official libvte is installed]/libvte.so.9
+
+* Start terminal emulators using libvte
+  $ gnome-terminal (roxterm, synaptic or etc)
+  => mlterm inside gnome-terminal is started.
+
+* Notice
+  o Because it is mlterm that works inside gnome-terminal or etc,
+    - Configuration files in ~/.mlterm/ are applied. (*)
+    - Configuration protocol (like '$ mlcc [key] [value]') is mostly available.
+    - Pressing Ctrl+Button3 shows 'mlconfig' menu.
+
+    (*) Following configurations are invalidated by gnome-terminal or etc in startup.
+       - 'DEFAULT' settings in ~/.mlterm/(v)(aa)font
+       - 'bel_mode', 'fg_color', 'bg_color', 'cursor_bg_color', 'wall_picture',
+         'use_transbg', 'alpha', 'encoding' and 'blink_cursor' options
+	 in ~/.mlterm/main
+
+  o Default value of following options are not same as that of normal mlterm.
+    [Option]       [Default Value]                     [Normal mlterm]
+    type_engine => xft or cairo (if compiled with it)  (xcore)
+  
+  o Following functions which normal mlterm provides are not available.
+    - Daemon mode
+    - Multiple ptys using Ctrl+F1 / Ctrl+F2 / Ctrl+F3
+    - Vertical writing mode
+    - 'screen_width_ratio' and 'screen_height_ratio' options
+    - 'inner_border' option
+    - 'use_urgent_bell' option
+
+  o If libvte compatible mlterm dies in compiz environment,
+    try XLIB_SKIP_ARGB_VISUAL variable as follows.
+    $ XLIB_SKIP_ARGB_VISUAL=1 gnome-terminal
+
+  o It is recommended to specify the same font to configuration of gnome-terminal
+    or etc and ~/.mlterm/aafont so as not to load excessive fonts.
+    ex) - gtkterm2
+    ~/.gtkterm2rc    => terminalFont=Terminal 14
+    ~/.mlterm/aafont => DEFAULT=Terminal 14
+
+  o Uim module of mlterm conflicts with the one of gtk+ and segmentation fault
+    is caused. (uim 1.5.7)
+
+  o Unsupported vte api functions
+    - vte_terminal_feed
+    - vte_terminal_feed_child
+    - vte_terminal_feed_child_binary
+    - vte_terminal_copy_primary
+    - vte_terminal_set_scroll_background
+    - vte_terminal_set_scroll_on_output
+    - vte_terminal_set_scroll_on_keystroke
+    - vte_terminal_set_color_dim
+    - vte_terminal_set_color_bold
+    - vte_terminal_set_color_highlight
+    - vte_terminal_set_default_colors
+    - vte_terminal_set_background_tint_color
+    - vte_terminal_set_cursor_shape
+    - vte_terminal_set_scrollback_lines
+    - vte_terminal_im_append_menuitems
+    - vte_terminal_get_font
+    - vte_terminal_set_allow_bold
+    - vte_terminal_get_allow_bold
+    - vte_terminal_is_word_char
+    - vte_terminal_set_mouse_autohide
+    - vte_terminal_get_mouse_autohide
+    - vte_terminal_get_text
+    - vte_terminal_get_text_include_trailing_spaces
+    - vte_terminal_get_text_range
+    - vte_terminal_match_clear_all
+    - vte_terminal_match_add_gregex (incomplete)
+    - vte_terminal_match_set_cursor
+    - vte_terminal_match_set_cursor_type
+    - vte_terminal_match_set_cursor_name
+    - vte_terminal_match_remove
+    - vte_terminal_match_check (incomplete)
+    - vte_terminal_set_emulation
+    - vte_terminal_get_status_line
+    - vte_terminal_set_pty
+    - vte_terminal_get_child_exit_status
+    - vte_terminal_match_add
+    - vte_terminal_set_alternate_screen_scroll
+    - vte_pty_new_foreign
+    - vte_pty_close
+
+  o Unsupported vte signals and properties
+    - signals
+      "eof"
+      "commit"
+      "emulation-changed"
+      "selection-changed"
+      "contents-changed"
+      "cursor-moved"
+      "deiconify-window"
+      "iconify-window"
+      "raise-window"
+      "lower-window"
+      "refresh-window"
+      "restore-window"
+      "maximize-window"
+      "resize-window"
+      "move-window"
+      "status-line-changed"
+      "increase-font-size"
+      "decrease-font-size"
+      "text-modified"
+      "text-inserted"
+      "text-deleted"
+      "text-scrolled"
+      "copy-clipboard"
+      "paste-clipboard"
+
+    - class property
+      "allow-bold"
+      "audible-bell"
+      "background-image-file"
+      "background-image-pixbuf"
+      "background-opacity"
+      "background-saturation"
+      "background-tint-color"
+      "background-transparent"
+      "backspace-binding"
+      "cursor-blink-mode"
+      "cursor-shape"
+      "delete-binding"
+      "emulation"
+      "encoding"
+      "font-desc"
+      "pointer-autohide"
+      "pty"
+      "scroll-background"
+      "scrollback-lines"
+      "scroll-on-keystroke"
+      "scroll-on-output"
+      "word-chars"
+      "visible-bell"
+
+* Tested terminals using vte.
+  o gnome-terminal 3.6.1 on Ubuntu 13.04        ... OK
+  o gnome-terminal 2.16.0 on CentOS 5		... OK
+  o roxterm 2.6.5-1 on Ubuntu 13.04             ... OK
+  o synaptic 0.80 on Ubuntu 13.04		... OK
+  o gtkterm2 0.2.3 on NetBSD 3.0.1		... OK
+  o evilvte 0.5.1-1 on Ubuntu 13.04		... OK
+  o sakura 3.0.4-2 on Ubuntu 13.04              ... OK
+  o lxterminal 0.1.11-4ubuntu2 on Ubuntu 13.04	... OK
+
+  Following platforms are not actually tested by developers, but were tested
+  in the past.
+  o gnome-terminal 3.6.0-0ubuntu1 on Ubuntu 12.10
+  o gnome-terminal 3.4.1.1-0ubuntu1 on Ubuntu 12.04
+  o gnome-terminal 3.0.1 on Ubuntu 11.10
+  o gnome-terminal 2.32.0 on Ubuntu 10.10
+  o roxterm 1.22.2-1 on Ubuntu 12.04
+  o roxterm 1.22.2 on Ubuntu 11.10
+  o roxterm 1.18.5 on Ubuntu 10.10
+  o roxterm 1.18.5 on NetBSD 3.0.1
+  o synaptic 0.75.12build1 on Ubuntu 12.10	... OK
+  o synaptic 0.75.9ubuntu1 on Ubuntu 12.04
+  o synaptic 0.63.1 on Ubuntu 10.10
+  o evilvte 0.5.0-1 on Ubuntu 12.04
+  o evilvte 0.4.8 on Ubuntu 11.10
+  o evilvte 0.4.9pre4 on NetBSD 3.0.1
+  o sakura 3.0.3-2 on Ubuntu 12.04
+  o sakura 2.4.2 on Ubuntu 11.10
+  o sakura 2.3.8 on Ubuntu 10.10
+  o lxterminal 0.1.11-2ubuntu1 on Ubuntu 12.04
+  o lxterminal 0.1.11 on Ubuntu 11.10

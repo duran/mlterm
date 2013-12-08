@@ -1,0 +1,44 @@
+top_builddir = ../..
+top_srcdir = @top_srcdir@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+
+VPATH = ${top_srcdir}/tool/mlclient
+
+CC = @CC@
+CFLAGS = @KIK_CFLAGS@ @CFLAGS@ @CPPFLAGS@ @GUI_CFLAGS@
+LIBS = @SOCK_LIBS@
+INSTALL = @INSTALL@
+
+BINDIR = $(DESTDIR)$(bindir)
+
+OBJ = main.o
+
+PROG = mlclient
+
+all: $(PROG)
+
+$(PROG): $(OBJ)
+	$(CC) -o $(PROG) $(OBJ) $(LIBS) @LDFLAGS@
+	cp $(PROG) $(PROG)x
+
+.SUFFIXES: .c.o
+
+.c.o:
+	$(CC) $(CFLAGS) -c $<
+
+clean:
+	rm -f $(OBJ) $(PROG) $(PROG).exe $(PROG)x $(PROG)x.exe *core 
+
+distclean: clean
+	rm -f Makefile
+
+$(BINDIR):
+	mkdir -p $(BINDIR)
+
+install: $(BINDIR)
+	$(INSTALL) -m 755 $(PROG) $(PROG)x $(BINDIR)
+
+uninstall:
+	rm -f $(BINDIR)/$(PROG) $(BINDIR)/$(PROG)x

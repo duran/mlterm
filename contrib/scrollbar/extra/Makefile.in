@@ -1,0 +1,77 @@
+top_builddir = ../../..
+top_srcdir = @top_srcdir@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+libdir = @libdir@
+
+LIBDIR = $(DESTDIR)$(libdir)/mlterm
+
+VPATH = ${top_srcdir}/contrib/scrollbar/extra
+
+ATHENA_OBJ = athena.o
+MOTIF_OBJ = motif.o
+MOZMODERN_OBJ = mozmodern.o
+NEXT_OBJ = next.o
+
+CFLAGS = $(CFLAGS_LOCAL) -I$(top_srcdir)/xwindow @CFLAGS@ @CPPFLAGS@ @X_CFLAGS@ -I/usr/include
+
+CC = @CC@
+INSTALL = @INSTALL@
+LIBTOOL = @LIBTOOL@
+
+LIBTOOL_CC = $(LIBTOOL) --mode=compile $(CC) $(CFLAGS)
+LIBTOOL_LINK = $(LIBTOOL) --mode=link $(CC) @LDFLAGS@
+LIBTOOL_INSTALL = $(LIBTOOL) --mode=install $(INSTALL)
+
+.SUFFIXES: .o .c
+
+all: libathena.la libmotif.la libmozmodern.la libnext.la
+libathena.la: $(ATHENA_OBJ)
+	$(LIBTOOL_LINK) -o libathena.la $(ATHENA_OBJ:.o=.lo) \
+	-rpath $(libdir)/mlterm \
+	-module -avoid-version @NO_UNDEFINED_FLAG@ \
+	@X_LIBS@ -lX11 @X_EXTRA_LIBS@
+#	@X_LIBS@ @X_PRE_LIBS@ -lX11 @X_EXTRA_LIBS@
+
+libmotif.la: $(MOTIF_OBJ)
+	$(LIBTOOL_LINK) -o libmotif.la $(MOTIF_OBJ:.o=.lo) \
+	-rpath $(libdir)/mlterm \
+	-module -avoid-version @NO_UNDEFINED_FLAG@ \
+	@X_LIBS@ -lX11 @X_EXTRA_LIBS@
+#	@X_LIBS@ @X_PRE_LIBS@ -lX11 @X_EXTRA_LIBS@
+
+libmozmodern.la: $(MOZMODERN_OBJ)
+	$(LIBTOOL_LINK) -o libmozmodern.la $(MOZMODERN_OBJ:.o=.lo) \
+	-rpath $(libdir)/mlterm \
+	-module -avoid-version @NO_UNDEFINED_FLAG@ \
+	@X_LIBS@ -lX11 @X_EXTRA_LIBS@
+#	@X_LIBS@ @X_PRE_LIBS@ -lX11 @X_EXTRA_LIBS@
+
+libnext.la: $(NEXT_OBJ)
+	$(LIBTOOL_LINK) -o libnext.la $(NEXT_OBJ:.o=.lo) \
+	-rpath $(libdir)/mlterm \
+	-module -avoid-version @NO_UNDEFINED_FLAG@ \
+	@X_LIBS@ -lX11 @X_EXTRA_LIBS@
+#	@X_LIBS@ @X_PRE_LIBS@ -lX11 @X_EXTRA_LIBS@
+
+.c.o:
+	$(LIBTOOL_CC) -c $<
+
+$(LIBDIR):
+	mkdir -p $(LIBDIR)
+
+install: $(LIBDIR)
+	$(LIBTOOL_INSTALL) libathena.la libmotif.la libmozmodern.la libnext.la $(LIBDIR)
+
+uninstall:
+	rm -f $(LIBDIR)/*athena.* $(LIBDIR)/*motif.* $(LIBDIR)/*mozmodern.* $(LIBDIR)/*next.*
+
+clean:
+	rm -rf $(ATHENA_OBJ) $(ATHENA_OBJ:.o=.lo) \
+		$(MOTIF_OBJ) $(MOTIF_OBJ:.o=.lo) \
+		$(MOZMODERN_OBJ) $(MOZMODERN_OBJ:.o=.lo) \
+		$(NEXT_OBJ) $(NEXT_OBJ:.o=.lo) \
+		libathena.la libmotif.la libmozmodern.la libnext.la *.core .libs
+
+distclean: clean
+	rm -f Makefile

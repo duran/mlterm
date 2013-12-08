@@ -1,0 +1,230 @@
+MLTERM - Multi Lingual TERMinal emulator
+
+
+COMPILATION
+===========
+
+  $ ./configure
+  $ make
+
+Options for configure
+---------------------
+
+  --prefix
+    Installation prefix
+
+  --disable-dl-table
+    Disable dynamic loading of character mapping or property table,
+    which is statically linked to libmkf.
+  
+  --without-map-table
+    Remove character mapping table
+
+  --without-prop-table
+    Remove character property table
+
+  --with-gui=(xlib|win32|fb)
+    Use specified gui library
+  
+  --with-imagelib=(gdk-pixbuf)
+    Link specified image library to mlterm for image processing.
+    Note that this option is not necessary for image processing, because
+    'mlimgloader' program (which is compiled with gdk-pixbuf if
+    --with-tools=mlimgloader option is specified) can process images and
+    pass them to mlterm.
+    This option is recommended only if you build libvte which depends
+    on gdk-pixbuf anyway.
+    (Imlib is not supported since mlterm 3.0.2)
+
+  --with-libltdl
+    Load modules with libltdl
+
+  --with-type-engines=(xcore|xft|cairo)
+    Use specified type engines for rendering text.
+    xcore is possible to disable only when --with-type-engines=(except xcore)
+    is specified with --disable-dl-type option.
+    (--enable-anti-alias == --with-type-engines=xcore,xft)
+
+  --disable-dl-type
+    Disable dynamic loading of type engine modules,
+    which are statically linked to mlterm.
+
+  --enable-fribidi
+    Use Fribidi for BiDi rendering
+
+  --enable-ind
+    Use libind for Indic rendering
+
+  --disable-dl-ctl
+    Disable dynamic loading of BiDi and Indic rendering modules,
+    which are statically linked to mlterm.
+  
+  --enable-ssh2
+    Use libssh2 (http://www.libssh2.org) to connect ssh2 server
+    (Usage: mlterm(mlclient) --serv ssh://user@xxx.xxx.xxx)
+    If you want to use camellia or SSH agent forwarding, install alternative
+    libssh2 of camellia branch at https://bitbucket.org/arakiken/libssh2/downloads.
+
+  --without-pthread
+    Don't depend on pthread for secure copy (scp) over ssh.
+    (Furthermore, don't link libpthread to mlterm in NetBSD even if --enable-ibus
+     or --with-type-engines=cairo is specified.)
+
+  --enable-utmp
+    Use utmp,wtmp,lastlog
+
+  --enable-debug
+    Build debug version
+
+  --enable-optimize-redrawing
+    Optimize redrawing a line
+
+  --with-scrollbars
+    Build specified scrollbars in scrollbar/ and contrib/scrollbar/ directories
+
+  --with-tools
+    Build specified tools in tool/ and contrib/tool/ directories
+
+  --disable-use-tools
+    Don't build and use external tools.
+    If this option is specified, --with-tools option is ignored.
+
+  --disable-dnd
+    Disable XDnD
+
+  --disable-kbd
+    Disable kbd input method for Arabic, Hebrew and Indic
+
+  --enable-uim
+    Support uim (Universal? Input Method) if available
+
+  --enable-m17nlib
+    Support m17n library if available
+
+  --enable-scim
+    Support SCIM (Smart Common Input Method platform) if available
+
+  --enable-ibus
+    Support iBUS (Intelligent Input Bus) if available
+
+  --enable-pty-helper
+    Support gnome-pty-helper. (Note that it is impossible to enable
+    gnome-pty-helper in BSD style pty system and that gnome-pty-helper must be
+    placed at ${libexecdir}/mlterm directory.)
+
+  --with-gtk=(2.0|3.0)
+    Use specified version of GTK+
+
+  --enable-vt52
+    Support vt52 emulation
+
+  --disable-image
+    Disable wall picture, icon picture, pseudo transparency and sixel graphics.
+
+  --disable-shared
+    Disable shared libraries
+
+  --disable-static
+    Disable static libraries
+
+
+What you need for compilation
+-----------------------------
+
+  All you need for basic compilation is libc and Xlib.  You don't need
+  internationalization support of OS because mlterm has own i18n code.
+
+  XFree86 4.0.2 or above and FreeType 2.0.2 or above are needed for
+  anti-alias.
+
+  gdk-pixbuf (Gtk+ 2.0.1 or higher) for background image.
+
+  Gtk+ (2.x ?) for GUI configurator "mlconfig" and "mlterm-menu".
+
+  Gtk+ (2.x ?) for libvte compatible library. (see gtk/INSTALL)
+
+  Fribidi (0.9.0 - ?) for Bidi.
+
+  libssh2 (http://www.libssh2.org) for ssh2 client and scp.
+  (If you want to use camellia as common key cryptography, download libssh2
+   camellia branch from https://bitbucket.org/arakiken/libssh2/downloads)
+
+
+Supported platforms
+-------------------
+
+  Platforms tested by developers.
+
+  * NetBSD 3.0.1 / X (x86)
+  * NetBSD teokure 6.0.1 / frmebuffer (x86)
+  * NetBSD 5.2 / framebuffer (hpcmips)
+  * NetBSD 6.1 / framebuffer (xm6i 0.42)
+  * OpenSolaris 2009.06 / X (CC=cc) (x86)
+  * Ubuntu 12.10 / X, framebuffer (CC=gcc, CC=clang) (x86)
+  * CentOS 5 / X (x86)
+  * Arch Linux 2013.05.01 / X (CC=gcc) (x86)
+  * FreeBSD 9.0 / framebuffer (x86)
+  * OpenBSD 5.3 / framebuffer (x86)
+  * MS Windows 7 / GDI (x86)
+  * MS Windows 7 + MSYS 1.0.10 / GDI (x86)
+  * MS Windows 7 + Cygwin 1.7.25 / GDI (CC=gcc, CC="i686-pc-mingw32-gcc") (x86)
+  * MS Windows 7 + Cygwin 1.7.25 / X (x86)
+
+  Following platforms are not actually tested by developers, but were supported
+  in the past and are probably supported now.
+
+  * Ubuntu 10.10 (CC=gcc, CC=llvm-gcc-4.2) (x86)
+  * Ubuntu 11.04 (CC=gcc, CC=clang) (x86)
+  * Ubuntu 11.10 (CC=gcc, CC=clang) (x86)
+  * Ubuntu 12.04 (CC=gcc, CC=clang) (x86)
+  * Debian GNU/Linux Sid, GNU libc 2.3.2 (x86)
+  * Solaris 8 (x86)
+  * Solaris 2.6 (SunOS 5.6) (CC=cc)
+  * Mac OS X 10.2 (ppc)
+  * OpenBSD 3.5 (x86)
+  * Fedora Core 2 (x86)
+  * SuSE Linux 9.1 (x86)
+  * HP-UX 10.20 (CC="cc -Ae")
+  * EWS4800 (UX/4800 R11.7) + X11R6 (CC=/usr/abiccs/bin/cc)
+  * EWS4800 (UX/4800 R13.5, 64bit) (CC=/usr/ccs64/bin/cc)
+  * FreeBSD 3.3R
+  * FreeBSD 4.4R
+  * NetBSD 1.6Q current (x86)
+  * NetBSD 1.6.2 (x86)
+  * RedHat Linux 7.1
+  * Ubuntu 10.04 (x86)
+  * MS Windows 98/Cygwin 1.5.13 with x-org 6.8.2.0-1 (x86)
+  * MS Windows XP SP3 (x86)
+  * MS Windows XP SP3/MSYS 1.0.10 (x86)
+  * MS Windows XP SP3/Cygwin 1.7.1-1 (x86)
+  * MS Windows XP SP3/Cygwin 1.7.1-1 with X (x86)
+  * MS Windows 7/Cygwin 1.7.9 (CC=gcc, CC="gcc -mno-cygwin") (x86)
+  * MS Windows 7/Cygwin 1.7.9 with X (x86)
+  * MS Windows 7/Cygwin 1.7.10 (CC=gcc, CC="gcc -mno-cygwin") (x86)
+  * MS Windows 7/Cygwin 1.7.10 with X (x86)
+  * MS Windows 7/Cygwin 1.7.13 (CC=gcc, CC="gcc-3 -mno-cygwin") (x86)
+  * MS Windows 7/Cygwin 1.7.13 with X (x86)
+  * MS Windows 7 + Cygwin 1.7.17 / GDI (CC=gcc, CC="gcc-3 -mno-cygwin") (x86)
+  * MS Windows 7 + Cygwin 1.7.17 / X (x86)
+  * MS Windows 7 + Cygwin 1.7.22 / GDI (CC=gcc, CC="i686-pc-mingw32-gcc") (x86)
+  * MS Windows 7 + Cygwin 1.7.22 / X (x86)
+
+
+USAGE
+=====
+
+  Read the manpage for detail.
+
+
+CONTACT
+=======
+
+  Subscribe mlterm-dev-en ML
+  (http://lists.sourceforge.net/lists/listinfo/mlterm-dev-en).
+
+
+COPYRIGHT AND LICENSE
+=====================
+
+  Modified BSD-style license.  See LICENCE file for detail.
+

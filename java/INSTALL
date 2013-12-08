@@ -1,0 +1,103 @@
+comment -*- mode: text -*-
+
+How to build & install mlterm co-operating with Java.
+
+* Requirements
+  o SWT (http://www.eclipse.org/swt/)
+  o JDK or JRE >=1.5
+
+* Build
+  $ ./configure (options)
+  $ make
+  $ cd java
+  -> Edit Makefile according to your environment.
+  $ make
+
+* Install and start mlterm
+  (Unix)
+  $ make install
+  $ LD_LIBRARY_PATH=(where mlterm shared libraries are installed) java -jar mlterm.jar
+
+  (Windows)
+  $ cp MLTermPty.dll mlterm.jar (where mlterm exec/dll are installed)
+  $ java -jar mlterm.jar
+
+  o options
+    -dialog       : Show dialog to specify a server.
+                    (Default behavior: Open dialog in win32. Not open dialog in unix.)
+    -g <col>x<row>: Specify size.
+    -fn <font>    : Specify font family.
+    -fg <color>   : Specify foreground color.
+    -bg <color>   : Specify background color.
+    -km <encoding>: Specify character encoding.
+    -serv (<protocol>://)(<user>@)<server>(:<port>): Specify a server.
+    -w <point>    : Specify font size.
+    -e ...        : Specify a command to be executed.
+    e.g.) java -jar mlterm -serv ssh://guest@192.168.0.1:22
+
+  (Applet)
+  $ cp mlterm.jar swt.jar mlterm.html (installation directory)
+  $ appletviewer mlterm.html
+
+* Notice
+  o Following options in ~/.mlterm/main or %HOMEPATH%\mlterm\main are applied automatically.
+    ENCODING
+    tabsize
+    use_combining
+    use_dynamic_comb
+    use_multi_col_char
+    col_size_of_width_a
+    logging_msg
+    logging_vt_seq
+    not_use_unicode_font
+    only_use_unicode_font
+    use_unicode_property
+    use_login_shell
+    ssh_public_key
+    ssh_private_key
+    fontsize
+    fg_color
+    bg_color
+    geometry
+    default_server
+    exec_cmd (*) (FYI: Use "exec_cmd = create" to connect user@shell.sf.net with "create" command.)
+    font (*) (e.g. "font = Kochi Gothic", "font = MS Gothic")
+    (*) Unique options of Java version.
+
+  o Following configuration protocols are supported.
+    encoding
+    is_auto_encoding
+    tabsize
+    use_combining
+    use_multi_column_char
+    col_size_of_width_a
+    locale
+    pwd
+    rows
+    cols
+    pty_name
+    icon_path (Not implemented)
+    logging_vt_seq
+    logging_msg
+    browser (*) (usage: mlcc exec browser http://www.google.co.jp)
+    (*) Unique options of Java version.
+
+  o Sortcut keys.
+    Control+F1: Open new mlterm window. (Not supported in applet version.)
+    Control+F2: Open new pty in current mlterm window.
+    Control+F3: Switch to a next free pty.
+
+* On-line demo (win32 only)
+  http://mlterm.sf.net/mltermlet.html
+  http://mlterm.sf.net/mltermlet.jnpl
+
+  o If libeay32.dll exits in system foler (c:\windows\system) and it is not
+    compatible with the one which libssh2 depends on, this demo doesn't start.
+    Remove libeay32.dll in system folder in advance.
+  o The path of RSA public key is %HOMEPATH%\mlterm\id_rsa.pub and the one of
+    private key is %HOMEPATH%\mlterm\id_rsa by default.
+
+* Tested terminals using vte.
+  o Java 1.6.0_23 on Ubuntu 11.10
+  o Java 1.7.0_02 on MS Windows 7/Cygwin 1.7.10 (CC="gcc -mno-cygwin")
+  o Java 1.7.0_02 on MS Windows 7/MinGW 5.1.4

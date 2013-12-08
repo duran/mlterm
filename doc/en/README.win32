@@ -1,0 +1,96 @@
+comment -*- mode: text -*-
+comment $Id$
+
+Memo about WIN32 native GUI.
+
+* Tested environments.
+  Windows 7 + MinGW 5.1.4 or MSYS 1.0.10(MSYS-DTK 1.0.1) or Cygwin 1.7.25
+            + libssh2 1.4.3(win32 native)
+            + GTK+ 2.12.9(win32 native)
+            + Fribidi 0.19.2(win32 native)
+
+* Build
+  (CC="i686-pc-mingw32-gcc") ./configure (--enable-ssh2) (--with-gui=win32) (--config-cache) \
+			(--with-libintl-prefix=[GTK+(win32) installed directory]) \
+			(--with-libiconv-prefix=[GTK+(win32) installed directory])
+  make
+
+* Install
+  Copy these files to a directory where you want to install mlterm.
+  kiklib/src/.libs/*.dll
+  mkf/lib/.libs/*.dll
+  mkf/libtbl/.libs/*.dll
+  mlterm/.libs/*.dll
+  mlterm/libctl/.libs/*.dll
+  main/.libs/mlterm.exe
+  scrollbar/sample/.libs/*.dll
+  inputmethod/kbd/.libs/*.dll
+  libind/.libs/*.dll
+  tool/mlimgloader/.libs/mlimgloader.exe
+
+  o (Built with MinGW)
+    If you build mlterm without libssh2 (--enable-ssh2 configure option),
+    copy win32/plink/plink.exe which mlterm uses to connect remote host.
+  o (Built with MSYS or cygwin)
+    Copy tool/mlclient/mlclient.exe and contrib/tool/mlcc/mlcc.exe.
+  o If you can build mlconfig and mlterm-menu which require GTK+ >= 2.0,
+    copy tool/mlconfig/.libs/mlconfig.exe and
+    contrib/tool/mlterm-menu/.libs/mlterm-menu.exe, too.
+  o 'make install' is available for installation in MSYS-DTK or Cygwin, but
+    remove 'relink_command' line in libmkf.la in advance because relinking
+    libmkf in 'make install' can be failed.
+
+* Configuration
+  (Built with MSYS-DTK or Cygwin)
+  Place configuration files in SYSCONFDIR/mlterm and each user's $HOME/.mlterm/
+  directory.
+  
+  (Built with MinGW or Cygwin(-mno-cygwin))
+  Place configuration files in [Mlterm installed directory]\mlterm\ and
+  each user's %HOMEPATH%\mlterm\ or %HOME%\.mlterm\ directory.
+
+  (Font Configuration)
+  Format of font,vfont,tfont is as follows.
+  [font family]( Bold Italic [font size]:[percentage])
+  
+  aafont, vaafont, taafont files are not used.
+
+  (Encoding)
+  If -E/--km/encoding option is "AUTO" or not specified, encoding of mlterm
+  is set as follows.
+  Built with MSYS-DTK or Cygwin           => UTF-8
+  Built with MinGW or Cygwin(-mno-cygwin) => Conforming with windows codepage.
+  
+* Start
+  (Built with MSYS-DTK or Cygwin)
+  set HOME=c:\msys\...\home\...
+  set CYGWIN=tty
+  mlterm.exe (options...) -e /bin/sh --login -i
+
+  (Built with MinGW or Cygwin(-mno-cygwin))
+  set HOMEPATH=...
+  mlterm.exe (options...) (-e plink.exe [-telnet/-ssh/-rlogin/-raw] [host])
+
+  If -e option is not specified, a dialog window which decides server to connect
+  is shown.
+  You can specify following options which customize a dialog in ~/.mlterm/main file.
+  o default_server(--serv) = (<protocol>://)(<user>@)<server>(:<port>)(:<encoding>)
+  o server_list(--servlist) = (<protocol>://)(<user>@)<server>(:<port>)(:<encoding>),(<protocol>://)(<user>@)<server>(:<port>)(:<encoding>),...
+  o always_show_dialog(--dialog) = true/false
+
+* Caution
+  o -I/--icon, --iconpath, -Y/--decsp, -&/--borderless, -d/--display and
+    -t/--transbg options are not available.
+  o 'genuine' of daemon mode is not supported in MSYS-DTK or Cygwin version.
+    Daemon mode itself is not supported in MinGW version. Instead,
+    "\x1b]5379;mlclient <prefix opitions> <options>\x07" sequence (which
+    mlclient or mlclientx command supports) is avaiable. (see doc/en/PROTOCOL).
+  o Supported scrollbars are "simple" and "sample" alone.
+  o Only "mlclient" command is available for "exesel:..." operation in
+    ~/.mlterm/key in MinGW.
+  o In order to show DEC SPECIAL characters, it is necessary to install
+    "Tera Special" font (TSPECIAL1.TTF) which is a part of Tera Term
+    (http://teraterm.sourceforge.jp/).
+
+* Executable binaries
+  http://mlterm.sf.net/cygwin-msys.html

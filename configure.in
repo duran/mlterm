@@ -1,0 +1,1178 @@
+AC_INIT()
+
+AC_CONFIG_HEADER(common/c_config.h)
+AC_CONFIG_AUX_DIR(script)
+
+AC_CANONICAL_HOST
+AC_CANONICAL_BUILD
+
+# for CFLAGS="..." ./configure ...
+AC_SUBST(CFLAGS)
+
+if test -d ${top_srcdir-$srcdir}/mkf -a -d ${top_srcdir-$srcdir}/kiklib ; then
+	SUBDIRS="kiklib mkf"
+	
+	MKF_CFLAGS='-I${top_builddir}/mkf/include'
+	KIK_CFLAGS='-I${top_builddir}/kiklib/include'
+
+	LMKF='${top_builddir}/mkf/lib/libmkf.la'
+	LKIK='${top_builddir}/kiklib/src/libkik.la'
+elif test -d ${top_srcdir-$srcdir}/../mkf -a -d ${top_srcdir-$srcdir}/../kiklib ; then
+	# --with-gui=xlib,fb => cd fb ; --with-gui=fb
+	MKF_CFLAGS='-I${top_builddir}/../mkf/include'
+	KIK_CFLAGS='-I${top_builddir}/../kiklib/include'
+
+	LMKF='${top_builddir}/../mkf/lib/libmkf.la'
+	LKIK='${top_builddir}/../kiklib/src/libkik.la'
+else
+	LMKF="-lmkf"
+	LKIK="-lkik"
+fi
+
+AC_SUBST(LMKF)
+AC_SUBST(MKF_CFLAGS)
+AC_SUBST(LKIK)
+AC_SUBST(KIK_CFLAGS)
+
+AC_PATH_TOOL(PKG_CONFIG, pkg-config)
+
+AC_PROG_CC
+AC_PROG_INSTALL
+
+AC_C_INLINE
+
+AC_LIBTOOL_WIN32_DLL
+AC_LIBTOOL_DLOPEN
+AC_ARG_WITH(libtool,
+	[  --with-libtool@<:@=ARG@:>@    libtool path @<:@default=without@:>@],
+	libtool=$with_libtool)
+if test "${libtool}" != "" ; then
+	LIBTOOL=${libtool}
+else
+	AM_PROG_LIBTOOL
+	LIBTOOL='${top_builddir}/libtool'
+fi
+AC_SUBST(LIBTOOL)
+
+AC_CHECK_LIB(socket,connect,SOCK_LIBS=-lsocket)
+AC_SUBST(SOCK_LIBS)
+
+AC_PATH_XTRA
+
+AC_ARG_ENABLE(debug,
+	[  --enable-debug          debug @<:@default=disabled@:>@],
+	debug=$enable_debug)
+if test "$debug" = "yes" ; then
+	DEB_CFLAGS="-DDEBUG -DKIK_DEBUG"
+fi
+AC_SUBST(DEB_CFLAGS)
+AC_SUBST(OPT_CFLAGS)
+
+AC_ARG_WITH(gui,
+	[  --with-gui@<:@=ARG@:>@        gui library(xlib|win32)],
+	gui=$with_gui)
+if test "$gui" = "fb,xlib" -o "$gui" = "xlib,fb" ; then
+	gui=xlib
+	SUBDIRS="${SUBDIRS} fb"
+	MAKE_DIRS="${MAKE_DIRS} fb"
+
+	# clone source tree to build both mlterm-xlib and mlterm-fb.
+	if test -d ${top_srcdir-$srcdir}/fb ; then
+		rm -rf ${top_srcdir-$srcdir}/fb
+	fi
+	mkdir -p ${top_srcdir-$srcdir}/fb
+	for file in ChangeLog Makefile.in common configure etc gtk inputmethod java \
+		main man mlterm script scrollbar xwindow doc ; do
+		cp -R ${top_srcdir-$srcdir}/$file ${top_srcdir-$srcdir}/fb/
+	done
+fi
+
+if test "$gui" = "fb" ; then
+	MAKE_DIRS="doc/kbd ${MAKE_DIRS}"
+	OUTPUT_FILES="doc/kbd/Makefile ${OUTPUT_FILES}"
+fi
+
+ml_cv_is_posix="yes"
+
+case "${host_os}" in
+mingw32*)
+	CYGPATHW=echo
+	WIN32TAG=_win32
+	if test ! -f "/lib/libmsys-1.0.dll.a" ; then
+		ml_cv_is_posix="no"
+	fi
+
+	if test "$gui" != "win32" ; then
+		echo "$gui is not supported in ${host_os}. Use win32."
+		gui="win32"
+	fi
+	;;
+cygwin*)
+	AC_CHECK_PROG(CYGPATHW,cygpath,cygpath -w,echo)
+	WIN32TAG=_win32
+	case "${CC} ${CFLAGS}" in
+	*mno-cygwin* | *-mingw*)
+		ml_cv_is_posix="no"
+		;;
+	*)
+		;;
+	esac
+
+	# $have_x is defined in AC_PATH_XTRA.
+	if test "$have_x" = "yes" ; then
+		if test "$gui" = "" ; then
+			gui="xlib"
+		elif test "$gui" != "xlib" -a "$gui" != "win32" ; then
+			echo "$gui is not supported in ${host_os}. Use win32."
+			gui="win32"
+		fi
+	else
+		if test "$gui" != "" -a "$gui" != "win32" ; then
+			echo "$gui is not supported in ${host_os}. Use win32."
+		fi
+		gui="win32"
+	fi
+	;;
+*)
+	CYGPATHW=echo
+	if test "$gui" != "xlib" -a "$gui" != "fb" ; then
+		if test "$gui" != "" ; then
+			echo "$gui is not supported in ${host_os}. xlib is used instead."
+		fi
+		gui="xlib"
+	fi
+	# $have_x is defined in AC_PATH_XTRA.
+	if test "$gui" = "xlib" -a "$have_x" != "yes" ; then
+		echo ""
+		echo "** ERROR **"
+		echo "Could not find xlib."
+		echo ""
+		exit 1
+	fi
+	;;
+esac
+
+# for java/Makefile.in
+AC_SUBST(WIN32TAG)
+AC_SUBST(CYGPATHW)
+
+if test "$ml_cv_is_posix" = "yes" -o "$debug" = "yes" ; then
+	SUBSYSTEM="-Wl,--subsystem,console"
+fi
+AC_SUBST(SUBSYSTEM)
+
+if test "$with_gnu_ld" = "yes" ; then
+	if test "$gui" = "fb" ; then
+		DEXPORT="-Wl,--version-script=\$(VPATH)/dexport-fb.map"
+	else
+		DEXPORT="-Wl,--version-script=\$(VPATH)/dexport.map"
+	fi
+elif test "`$LD --version 2>&1 | $GREP Solaris`" != "" ; then
+	# This option is for SunOS 5.x (Solaris) or later.
+	DEXPORT="-Wl,-M -Wl,\$(VPATH)/dexport.map -Wl,-z -Wl,nodefs"
+fi
+AC_SUBST(DEXPORT)
+
+AC_ARG_WITH(gtk,
+	[  --with-gtk@<:@=ARG@:>@        gtk+ version (2.0|3.0)],
+	gtk_version=$with_gtk)
+if test "$gtk_version" = "" ; then
+	gtk_version=2.0
+elif test "$gtk_version" != "2.0" -a "$gtk_version" != "3.0" ; then
+	echo "GTK+ $gtk_version is not supported. Use GTK+ 2.0."
+	gtk_version=2.0
+fi
+
+PKG_CHECK_MODULES(GTK, gtk+-$gtk_version, have_gtk=yes, have_gtk=no)
+# "tr ..." is hack for cygwin. (removing \r which is output by win32 native pkg-config.)
+GTK_CFLAGS="`echo $GTK_CFLAGS | tr -d '\r'`"
+GTK_LIBS="`echo $GTK_LIBS | tr -d '\r'`"
+AC_SUBST(GTK_CFLAGS)
+AC_SUBST(GTK_LIBS)
+
+PKG_CHECK_MODULES(GDK_PIXBUF, gdk-pixbuf-2.0, have_gdk_pixbuf2=yes, have_gdk_pixbuf2=no)
+# try to link libgio-2.0 explicitly. (SF topic #6234829)
+PKG_CHECK_EXISTS(gdk-pixbuf-2.0 >= 2.14, [ PKG_CHECK_MODULES(GIO, gio-2.0) ])
+GDK_PIXBUF_CFLAGS="`echo $GDK_PIXBUF_CFLAGS $GIO_CFLAGS | tr -d '\r'`"
+GDK_PIXBUF_LIBS="`echo $GDK_PIXBUF_LIBS $GIO_LIBS | tr -d '\r'`"
+
+AC_CHECK_PROG(have_gdk_pixbuf1,gdk-pixbuf-config,yes)
+
+if test "$gui" = "xlib" ; then
+	AC_ARG_WITH(imagelib,
+		[  --with-imagelib@<:@=ARG@:>@   image library (gdk-pixbuf) @<:@default=no@:>@],
+		imagelib=$with_imagelib)
+else
+	# Don't link an external image library on win32gdi or framebuffer.
+	with_imagelib=""
+fi
+
+case ${imagelib} in
+imlib)
+	AC_CHECK_PROG(imlib_config,imlib-config,yes,no)
+	if test "x$imlib_config" = "xno" ; then
+		echo ""
+		echo "** ERROR **"
+		echo "Could not find imlib-config."
+		echo ""
+		exit 1
+	fi
+	echo ""
+	echo "** WARNING **"
+	echo " imlib is no longer supported."
+	echo ""
+	IMAGELIB_CFLAGS="`imlib-config --cflags` -DBUILTIN_IMAGELIB"
+	IMAGELIB_LIBS="`imlib-config --libs`"
+	;;
+imlib2)
+	AC_CHECK_PROG(imlib2_config,imlib2-config,yes,no)
+	if test "x$imlib2_config" = "xno" ; then
+		echo ""
+		echo "** ERROR **"
+		echo "Could not find imlib2-config."
+		echo ""
+		exit 1
+	fi
+	echo ""
+	echo "** WARNING **"
+	echo " imlib2 is no longer supported."
+	echo ""
+	IMAGELIB_CFLAGS="`imlib2-config --cflags` -DBUILTIN_IMAGELIB"
+	IMAGELIB_LIBS="`imlib2-config --libs`"
+	;;
+gdk-pixbuf)
+	if test "$have_gdk_pixbuf2" = "yes" ; then
+		gdk_pixbuf_version=2
+	elif test "$have_gdk_pixbuf1" = "yes" ; then
+		gdk_pixbuf_version=1
+	else
+		echo ""
+		echo "** ERROR **"
+		echo "Could not find gdk-pixbuf"
+		echo ""
+		exit 1
+	fi
+	;;
+gdk-pixbuf2)
+	if test "$have_gdk_pixbuf2" = "yes" ; then
+		gdk_pixbuf_version=2
+	else
+		echo ""
+		echo "** ERROR **"
+		echo "Could not find gdk-pixbuf2"
+		echo ""
+		exit 1
+	fi
+	;;
+gdk-pixbuf1)
+	if test "$have_gdk_pixbuf1" = "yes" ; then
+		gdk_pixbuf_version=1
+	else
+		echo ""
+		echo "** ERROR **"
+		echo "Could not find gdk-pixbuf1"
+		echo ""
+		exit 1
+	fi
+	;;
+*)
+	if test "${imagelib}" != "" ; then
+		echo ""
+		echo "** ERROR **"
+		echo "${imagelib} library is NOT supported."
+		echo ""
+		exit 1
+	fi
+	;;
+esac
+
+if test "$gdk_pixbuf_version" != "" ; then
+	if test "$gdk_pixbuf_version" = "1" ; then
+		# Override GDK_PIXBUF_XXX variables.
+		GDK_PIXBUF_CFLAGS="`gdk-pixbuf-config --cflags|tr -d '\r'`"
+		GDK_PIXBUF_LIBS="`gdk-pixbuf-config --libs|tr -d '\r'`"
+		echo ""
+		echo "** WARNING **"
+		echo " gdk-pixbuf1 is no longer supported."
+		echo ""
+	fi
+
+	IMAGELIB_CFLAGS="${GDK_PIXBUF_CFLAGS} -DBUILTIN_IMAGELIB"
+	IMAGELIB_LIBS="${GDK_PIXBUF_LIBS}"
+fi
+
+# Used by mlimgloader.
+AC_SUBST(GDK_PIXBUF_CFLAGS)
+AC_SUBST(GDK_PIXBUF_LIBS)
+
+AC_SUBST(IMAGELIB_CFLAGS)
+AC_SUBST(IMAGELIB_LIBS)
+
+# XXX For pow in libm.so which is used in x_imagelib.c
+# /lib/* ... e.g.) /lib/i386-linux-gnu in ubuntu.
+for ml_cv_lib_path in /lib /usr/lib /lib/* `echo $LIBRARY_PATH | tr ":" " "` ; do
+	libm_files=`ls $ml_cv_lib_path/libm\\.so* $ml_cv_lib_path/libm\\.sl* 2> /dev/null`
+	for libm_file in $libm_files ; do
+		if test -z "$ml_cv_libm_dir" -a -n "`$NM -D $libm_file | $GREP pow`" ; then
+			ml_cv_libm_dir=`dirname $libm_file`
+		fi
+	done
+done
+if test -z "$IMAGELIB_LIBS" ; then
+	if test -n "$ml_cv_libm_dir" ; then
+		MATH_CFLAGS="-DDLOPEN_LIBM -DLIBMDIR=\\\"$ml_cv_libm_dir\\\""
+	else
+		AC_CHECK_LIB(m, pow, MATH_LIBS=-lm)
+	fi
+else
+	AC_CHECK_LIB(m, pow, MATH_LIBS=-lm)
+fi
+AC_SUBST(MATH_LIBS)
+AC_SUBST(MATH_CFLAGS)
+
+
+AC_ARG_ENABLE(image,
+	[  --disable-image         show image @<:@default=enabled@:>@],
+	image=$enable_image, image="yes")
+if test "$image" != "yes" ; then
+	IMAGE_CFLAGS="-DNO_IMAGE"
+fi
+AC_SUBST(IMAGE_CFLAGS)
+
+
+if test "$gui" = "win32" ; then
+	GUI="win32"
+	GUI_CFLAGS="-DUSE_WIN32GUI"
+	X_CFLAGS=""
+elif test "$gui" = "xlib" ; then
+	GUI="xlib"
+	# Li18nux Xlib-I18N defines X_HAVE_UTF8_STRING but has no Xutf8LookupString.
+	ldflags="$LDFLAGS" cflags="$CFLAGS"
+	LDFLAGS="$LDFLAGS $X_PRE_LIBS $X_LIBS $X_EXTRA_LIBS" CFLAGS="$X_CFLAGS $CFLAGS"
+	AC_CHECK_LIB(X11,Xutf8LookupString,XUTF8_CFLAGS="-DHAVE_XUTF8_LOOKUP_STRING")
+	LDFLAGS="$ldflags" CFLAGS="$cflags"
+	AC_SUBST(XUTF8_CFLAGS)
+else
+	GUI="fb"
+	AC_CHECK_HEADER(machine/grfioctl.h, GUI_CFLAGS="-DUSE_GRF")
+	GUI_CFLAGS="${GUI_CFLAGS} -DUSE_FRAMEBUFFER"
+fi
+AC_SUBST(GUI)
+AC_SUBST(GUI_CFLAGS)
+
+AC_CHECK_HEADER(regex.h,REGEX_CFLAGS="-DHAVE_REGEX")
+AC_SUBST(REGEX_CFLAGS)
+
+
+AC_ARG_ENABLE(dl-ctl,
+	[  --disable-dl-ctl        dynamic loading ctl library @<:@default=enable@:>@],
+	dl_ctl=$enable_dl_ctl, dl_ctl="yes")
+if test "$enable_shared" = "no" ; then
+	dl_ctl="no"
+fi
+
+if test "$dl_ctl" = "yes" ; then
+	LMLTERM_CORE=libmlterm_core.la
+	CTL_LOADER_OBJ=ml_ctl_loader.o
+else
+	LMLTERM_CORE=libmlterm_core.a
+	CTL_CFLAGS="-DNO_DYNAMIC_LOAD_CTL"
+	CTL_LIBS_FOR_VTE="../mlterm/libctl/*.lo"
+fi
+AC_SUBST(LMLTERM_CORE)
+AC_SUBST(CTL_LOADER_OBJ)
+
+AC_ARG_ENABLE(fribidi,
+	[  --enable-fribidi        bidi @<:@default=disabled@:>@],
+	fribidi=$enable_fribidi, fribidi="no")
+if test "$fribidi" = "yes" ; then
+	PKG_CHECK_MODULES(FRIBIDI, fribidi, have_fribidi=yes, have_fribidi=no)
+	if test "$have_fribidi" != "yes" ; then
+		AC_CHECK_PROG(fribidi_config,fribidi-config,yes,fribidi="no")
+		if test "$fribidi_config" = "yes" ; then
+			FRIBIDI_CFLAGS="`fribidi-config --cflags`"
+			FRIBIDI_LIBS="`fribidi-config --libs`"
+			have_fribidi="yes"
+		fi
+	fi
+else
+	have_fribidi="no"
+fi
+if test "$have_fribidi" = "yes" ; then
+	if test "$dl_ctl" = "yes" ; then
+		CTL_LIBS="libctl_bidi.la ${CTL_LIBS}"
+	else
+		CTL_CFLAGS="-DUSE_FRIBIDI ${CTL_CFLAGS}"
+		CTL_LIBS="libctl_bidi.a ${CTL_LIBS}"
+		CTL_LIBS_FOR_PROG="../mlterm/libctl/libctl_bidi.a ${FRIBIDI_LIBS} ${CTL_LIBS_FOR_PROG}"
+		CTL_LIBS_FOR_VTE="${FRIBIDI_LIBS} ${CTL_LIBS_FOR_VTE}"
+	fi
+fi
+
+# "tr ..." is hack for cygwin. (removing \r which is output by win32 native pkg-config.)
+FRIBIDI_CFLAGS="`echo ${FRIBIDI_CFLAGS} | tr -d '\r'`"
+FRIBIDI_LIBS="`echo ${FRIBIDI_LIBS} | tr -d '\r'`"
+AC_SUBST(FRIBIDI_CFLAGS)
+AC_SUBST(FRIBIDI_LIBS)
+AC_SUBST(CTL_CFLAGS)
+AC_SUBST(CTL_LIBS_FOR_VTE)
+
+AC_ARG_WITH(pthread,
+	[  --without-pthread       don't use pthread @<:@default=with@:>@])
+
+
+AC_ARG_ENABLE(dl-type,
+	[  --disable-dl-type       dynamic loading type engine library @<:@default=enable@:>@],
+	dl_type=$enable_dl_type, dl_type="yes")
+if test "$enable_shared" = "no" ; then
+	dl_type="no"
+fi
+
+if test "$dl_type" = "yes" ; then
+	TYPE_LOADER_OBJ=x_type_loader.o
+	if test "$gui" != "xlib" ; then
+		TYPE_CFLAGS="-DNO_DYNAMIC_LOAD_TYPE"
+	fi
+else
+	TYPE_CFLAGS="-DNO_DYNAMIC_LOAD_TYPE"
+	TYPE_LIBS_FOR_VTE="../xwindow/libtype/*.lo"
+fi
+AC_SUBST(TYPE_LOADER_OBJ)
+
+# --enable-anti-alias is backward compatibility for --with-type-engines
+AC_ARG_ENABLE(anti_alias,
+	[  --enable-anti-alias     (obsoleted by --with-type-engines)anti alias @<:@default=disabled@:>@],
+	anti_alias=$enable_anti_alias)
+
+AC_ARG_WITH(type_engines,
+	[  --with-type-engines@<:@=ARG@:>@ type engines (xcore, xft, cairo) @<:@default=xcore@:>@],
+	type_engines=$with_type_engines)
+
+if test "$gui" != "xlib" ; then
+	type_engines="xcore"
+elif  test "$anti_alias" = "yes" ; then
+	type_engines="xcore xft"
+fi
+
+if test "$type_engines" = ""; then
+	type_engines="xcore"
+fi
+
+type_engines=`echo ${type_engines} | sed 's/,/ /g'`
+for type_engine in ${type_engines} ; do
+case ${type_engine} in
+xft)
+	PKG_CHECK_MODULES(XFT, xft, have_xft=yes, have_xft=no)
+	if test "$have_xft" != "yes" ; then
+		AC_CHECK_PROG(xft_config,xft-config,yes)
+		if test "$xft_config" = "yes" ; then
+			XFT_CFLAGS="`xft-config --cflags`"
+			XFT_LIBS="`xft-config --libs`"
+			have_xft=yes
+		else
+			AC_CHECK_LIB(Xft,XftDrawCreate,
+				[
+				have_xft=yes
+				# -lfontconfig is necessary because x_font.c refers FcXXX
+				# functions directly.
+				XFT_LIBS="-lXft -lfontconfig"
+				])
+		fi
+	fi
+
+	if test "$have_xft" = "yes" ; then
+		if test "$dl_type" = "yes" ; then
+			TYPE_LIBS="libtype_xft.la ${TYPE_LIBS}"
+		else
+			NODL_OBJ="x_window_xft.o ${NODL_OBJ}"
+			TYPE_LIBS_FOR_VTE="${XFT_LIBS} ${TYPE_LIBS_FOR_VTE}"
+		fi
+		TYPE_CFLAGS="-DUSE_TYPE_XFT ${TYPE_CFLAGS}"
+		type_engines_result="$type_engines_result xft"
+	fi
+	;;
+cairo)
+	PKG_CHECK_MODULES(CAIRO, cairo, have_cairo=yes, have_cairo=no)
+	if test "$have_cairo" != "yes" ; then
+		AC_CHECK_LIB(cairo,cairo_create,
+			[
+			have_cairo=yes
+			# -lfontconfig is necessary because x_font.c refers FcXXX
+			# functions directly.
+			CAIRO_LIBS="-lcairo -lfontconfig"
+			])
+	fi
+
+	if test "$have_cairo" = "yes" ; then
+		if test "$dl_type" = "yes" ; then
+			TYPE_LIBS="libtype_cairo.la ${TYPE_LIBS}"
+			if test "$with_pthread" != "no" ; then
+				# NetBSD doesn't allow shared libraries to link
+				# libpthread without linking it to executables.
+				case "${host_os}" in
+				netbsd*)
+					PTHREAD_LIB="-lpthread"
+					;;
+				esac
+			fi
+		else
+			NODL_OBJ="x_window_cairo.o ${NODL_OBJ}"
+			TYPE_LIBS_FOR_VTE="${CAIRO_LIBS} ${TYPE_LIBS_FOR_VTE}"
+		fi
+		TYPE_CFLAGS="-DUSE_TYPE_CAIRO ${TYPE_CFLAGS}"
+		type_engines_result="$type_engines_result cairo"
+	fi
+	;;
+xcore)
+	TYPE_CFLAGS="-DUSE_TYPE_XCORE ${TYPE_CFLAGS}"
+	type_engines_result="$type_engines_result xcore"
+	;;
+*)
+	echo "${type_engine} is unknown type engine."
+	;;
+esac
+done
+
+if test "${NODL_OBJ}" != "" ; then
+	TYPE_LIBS=libtype.a
+	TYPE_LIBS_FOR_PROG="../xwindow/libtype/libtype.a ${CAIRO_LIBS} ${XFT_LIBS}"
+fi
+
+if test "${TYPE_CFLAGS}" = "" ; then
+	echo "No type engine is specified."
+	exit  1
+fi
+
+AC_SUBST(XFT_CFLAGS)
+AC_SUBST(XFT_LIBS)
+AC_SUBST(CAIRO_LIBS)
+AC_SUBST(CAIRO_LIBS)
+AC_SUBST(TYPE_CFLAGS)
+AC_SUBST(TYPE_LIBS)
+AC_SUBST(TYPE_LIBS_FOR_PROG)
+AC_SUBST(TYPE_LIBS_FOR_VTE)
+AC_SUBST(NODL_OBJ)
+AC_SUBST(PROG)
+
+AC_ARG_ENABLE(ssh2,
+	[  --enable-ssh2           libssh2 @<:@default=disabled@:>@],
+	ssh2=$enable_ssh2, ssh2="no")
+if test "$ssh2" = "yes" ; then
+	AC_CHECK_LIB(ssh2,libssh2_init,
+		[
+		SSH2_CFLAGS="-DUSE_LIBSSH2"
+		if test "x$allow_undefined_flag" = "xunsupported" ; then
+			# ml_pty_ssh.c uses CRYPTO_xxx functions.
+			SSH2_LIBS="-lcrypto -lssh2"
+		else
+			SSH2_LIBS="-lssh2"
+		fi
+		], ssh2="no")
+fi
+
+if test "$ml_cv_is_posix" = "no" ; then
+	if test "$ssh2" = "yes" ; then
+		ML_PTY_OBJ="ml_pty_ssh.o"
+		# Not dlopen
+		SSH2_CFLAGS="$SSH2_CFLAGS -DNO_DYNAMIC_LOAD_SSH"
+		SSH2_LIBS_FOR_PROG="$SSH2_LIBS -lwsock32 -lws2_32"
+		SSH2_LIBS=
+	else
+		ML_PTY_OBJ="ml_pty_pipewin32.o"
+	fi
+else
+	ML_PTY_OBJ="ml_pty_unix.o"
+
+	if test "$ssh2" = "yes" ; then
+		if test "$with_pthread" != "no" ; then
+			AC_CHECK_HEADER(pthread.h,
+				[
+				SSH2_CFLAGS="$SSH2_CFLAGS -DHAVE_PTHREAD"
+				SSH2_LIBS="$SSH2_LIBS -lpthread"
+				])
+			# NetBSD doesn't allow shared libraries to link libpthread
+			# without linking it to executables.
+			case "${host_os}" in
+			netbsd*)
+				PTHREAD_LIB="-lpthread"
+				;;
+			esac
+		fi
+
+		ML_PTY_OBJ="ml_pty_ssh.o ${ML_PTY_OBJ}"
+
+		if test "$enable_shared" = "no" ; then
+			SSH2_CFLAGS="$SSH2_CFLAGS -DNO_DYNAMIC_LOAD_SSH"
+			SSH2_LIBS_FOR_PROG="$SSH2_LIBS"
+			SSH2_LIBS=
+		else
+			# dlopen libptyssh
+			MAKE_DIRS="mlterm/libptyssh ${MAKE_DIRS}"
+			OUTPUT_FILES="mlterm/libptyssh/Makefile ${OUTPUT_FILES}"
+		fi
+	fi
+fi
+AC_SUBST(SSH2_LIBS)
+AC_SUBST(SSH2_LIBS_FOR_PROG)
+AC_SUBST(SSH2_CFLAGS)
+AC_SUBST(ML_PTY_OBJ)
+
+AC_ARG_ENABLE(utmp,
+	[  --enable-utmp           utmp (Experimental) @<:@default=disabled@:>@],
+	utmp=$enable_utmp, utmp="no")
+AC_ARG_ENABLE(pty_helper,
+	[  --enable-pty-helper     use pty helper @<:@default=disabled@:>@],
+	pty_helper=$enable_pty_helper)
+if test "$utmp" = "yes" -a "$pty_helper" != "yes" ; then
+	UTMP_CFLAGS="-DUSE_UTMP"
+	has_utmp=`grep utmp /etc/group 2>/dev/null`
+	if test "$has_utmp" ; then
+		INSTALL_OPT="-m 2755 -g utmp"
+	else
+		INSTALL_OPT="-m 4755 -o root"
+	fi
+else
+	INSTALL_OPT="-m 755"
+fi
+
+if test "$gui" = "fb" ; then
+	INSTALL_OPT="-m 4755 -o root"
+fi
+
+AC_SUBST(UTMP_CFLAGS)
+AC_SUBST(INSTALL_OPT)
+
+if test "${have_gtk}" = "yes" ; then
+	if test "${gtk_version}" = "3.0" ; then
+		PKG_CHECK_MODULES(VTE, vte-2.90, have_vte=yes, have_vte=no)
+		LIBVTE_SUFFIX=2_90
+		AC_SUBST(LIBVTE_SUFFIX)
+	else
+		PKG_CHECK_MODULES(VTE, vte, have_vte=yes, have_vte=no)
+	fi
+	if test "$have_vte" = "yes" ; then
+		OUTPUT_FILES="gtk/Makefile ${OUTPUT_FILES}"
+		# "tr ..." is hack for cygwin.
+		# (removing \r which is output by win32 native pkg-config.)
+		VTE_CFLAGS="`echo $VTE_CFLAGS | tr -d '\r'`"
+		AC_SUBST(VTE_CFLAGS)
+	fi
+fi
+
+tools="mlclient,mlconfig,mlcc,mlterm-menu,mlimgloader"
+AC_ARG_WITH(tools,
+	[  --with-tools@<:@=ARG@:>@      external tools @<:@default=mlclient,mlconfig,mlterm-menu,mlcc@:>@],
+	[
+	# if given --without-tools
+	if test "${with_tools}" = "no" ; then
+		tools=""
+	else
+		if test "${with_tools}" != "yes" ; then
+			tools=${with_tools}
+		fi
+		if test -z "$IMAGELIB_CFLAGS" -a "`echo ${tools}|$GREP mlimgloader`" = "" ; then
+			# If --with-imagelib option is not specified, mlimgloader is always built.
+			tools=${tools},mlimgloader
+		fi
+	fi
+	])
+tools=`echo ${tools} | sed 's/,/ /g'`
+
+AC_ARG_ENABLE(use-tools,
+	[  --disable-use-tools     don't build and use external tools @<:@default=enabled@:>@])
+if test "$enable_use_tools" = "no" ; then
+	TOOLS_CFLAGS="-DNO_TOOLS"
+	tools=
+fi
+AC_SUBST(TOOLS_CFLAGS)
+
+for tool in ${tools} ; do
+case ${tool} in
+mlconfig)
+	if test "${have_gtk}" = "yes" -a "$gui" != "fb" ; then
+		MAKE_DIRS="tool/mlconfig ${MAKE_DIRS}"
+		OUTPUT_FILES="tool/mlconfig/Makefile tool/mlconfig/po/Makefile.in ${OUTPUT_FILES}"
+		tools_result="$tools_result $tool"
+		if test "$gui" = "xlib" -a "$gtk_version" = "2.0" ; then
+			XLFDSEL_OBJ="gtkxlfdsel.o"
+			AC_SUBST(XLFDSEL_OBJ)
+		fi
+	else
+		echo ""
+		echo "** WARNING  **"
+		echo " couldn't compile mlconfig since headers/libraries of GTK+-2 are missing."
+		echo ""
+	fi
+	;;
+mlterm-menu)
+	if test "${have_gtk}" = "yes" -a "$gui" != "fb" ; then
+		MAKE_DIRS="contrib/tool/mlterm-menu ${MAKE_DIRS}"
+		OUTPUT_FILES="contrib/tool/mlterm-menu/Makefile ${OUTPUT_FILES}"
+		tools_result="$tools_result $tool"
+	else
+		echo ""
+		echo "** WARNING  **"
+		echo " couldn't compile mlterm-menu since headers/libraries of GTK+-2 are missing."
+		echo ""
+	fi
+	;;
+mlclient)
+	MAKE_DIRS="tool/mlclient ${MAKE_DIRS}"
+	OUTPUT_FILES="tool/mlclient/Makefile ${OUTPUT_FILES}"
+	tools_result="$tools_result $tool"
+	;;
+w3mmlconfig)
+	AC_PATH_PROG(PERL,perl,$PATH)
+	if test "x$PERL" = x ; then
+		echo ""
+		echo "** WARNING  **"
+		echo " couldn't find perl in PATH environment variable."
+		echo ""
+		PERL="/usr/local/bin/perl" # should be "/usr/bin/env perl"?
+	fi
+	MAKE_DIRS="tool/w3mmlconfig ${MAKE_DIRS}"
+	OUTPUT_FILES="tool/w3mmlconfig/Makefile tool/w3mmlconfig/mlconfig.cgi tool/w3mmlconfig/w3mmlconfig ${OUTPUT_FILES}"
+	tools_result="$tools_result $tool"
+	;;
+mlcc)
+	if test "$ml_cv_is_posix" = "yes" ; then
+		MAKE_DIRS="contrib/tool/mlcc ${MAKE_DIRS}"
+		OUTPUT_FILES="contrib/tool/mlcc/Makefile ${OUTPUT_FILES}"
+		tools_result="$tools_result $tool"
+	fi
+	;;
+mlmenu)
+	if test "$gui" = "xlib" ; then
+		MAKE_DIRS="tool/mlmenu ${MAKE_DIRS}"
+		OUTPUT_FILES="tool/mlmenu/Makefile ${OUTPUT_FILES}"
+		tools_result="$tools_result $tool"
+	fi
+	;;
+mlterm-zoom)
+	if test "$gui" = "xlib" ; then
+		MAKE_DIRS="contrib/tool/mlterm-zoom ${MAKE_DIRS}"
+		OUTPUT_FILES="contrib/tool/mlterm-zoom/Makefile ${OUTPUT_FILES}"
+		tools_result="$tools_result $tool"
+	fi
+	;;
+mlimgloader)
+	OUTPUT_FILES="tool/mlimgloader/Makefile ${OUTPUT_FILES}"
+	MAKE_DIRS="tool/mlimgloader ${MAKE_DIRS}"
+	tools_result="$tools_result $tool"
+
+	AC_TRY_COMPILE([
+		#include  <windows.h>
+		#include  <gdiplus.h>],,
+		have_gdiplus=yes,have_gdiplus=no)
+	if test "$have_gdiplus" = "yes" ; then
+		MLIMGLOADER_LIB=gdiplus
+	elif test "$have_gdk_pixbuf2" = "yes" -o "$have_gdk_pixbuf1" = "yes" ; then
+		MLIMGLOADER_LIB=gdk-pixbuf
+	else
+		MLIMGLOADER_LIB=none
+	fi
+	AC_SUBST(MLIMGLOADER_LIB)
+	;;
+*)
+	echo "${tool} is unknown tool."
+	;;
+esac
+done
+
+#
+# --- libltdl ---
+#
+AC_ARG_WITH(libltdl,
+	[  --with-libltdl@<:@=PREFIX@:>@ load modules with libltdl @<:@default=without@:>@],,
+	[with_libltdl=no])
+# We don't check here wheter libltdl is installed. (See kiklib/src/configure.in)
+
+#
+# --- Xdnd ---
+#
+AC_ARG_ENABLE(dnd,
+	[  --disable-dnd           dnd @<:@default=enabled@:>@],
+	dnd=$enable_dnd, dnd="yes")
+if test "$dnd" = "no" ; then
+	DND_CFLAGS="-DDISABLE_XDND"
+fi
+AC_SUBST(DND_CFLAGS)
+
+
+DL_LIBS_IM=""
+
+#
+# --- kbd ---
+#
+AC_ARG_ENABLE(kbd,
+	[  --disable-kbd           input method for Arabic and Indic @<:@default=enabled@:>@],
+	kbd=$enable_kbd)
+if test "$enable_shared" = "no" ; then
+	kbd="no"
+fi
+
+if test "$kbd" != "no" ; then
+	MAKE_DIRS="inputmethod/kbd ${MAKE_DIRS}"
+	OUTPUT_FILES="inputmethod/kbd/Makefile ${OUTPUT_FILES}"
+	if test "x$with_libltdl" != "xno" ; then
+		DL_LIBS_IM="-dlopen \$(top_builddir)/inputmethod/kbd/libim-kbd.la ${DL_LIBS_IM}"
+	fi
+	input_methods_result="$input_methods_result kbd"
+fi
+
+#
+# --- uim ---
+#
+AC_ARG_ENABLE(uim,
+	[  --enable-uim            uim (Experimental) @<:@default=disabled@:>@],
+	uim=$enable_uim)
+if test "$enable_shared" = "no" ; then
+	uim="no"
+fi
+
+if test "x$uim" = xyes ; then
+	PKG_CHECK_MODULES(UIM, uim >= 1.0.0, have_uim=yes, have_uim=no)
+	if test "x$have_uim" = xyes ; then
+		MAKE_DIRS="inputmethod/uim ${MAKE_DIRS}"
+		OUTPUT_FILES="inputmethod/uim/Makefile ${OUTPUT_FILES}"
+		if test "x$with_libltdl" != xno ; then
+			DL_LIBS_IM="-dlopen \$(top_builddir)/inputmethod/uim/libim-uim.la ${DL_LIBS_IM}"
+		fi
+		input_methods_result="$input_methods_result uim"
+	fi
+fi
+AC_SUBST(UIM_CFLAGS)
+AC_SUBST(UIM_LIBS)
+
+#
+# --- m17n library ---
+#
+AC_ARG_ENABLE(m17nlib,
+	[  --enable-m17nlib        m17n library (Experimental) @<:@default=disabled@:>@],
+	m17nlib=$enable_m17nlib)
+if test "$enable_shared" = "no" ; then
+	m17nlib="no"
+fi
+
+if test "x$m17nlib" = xyes ; then
+	AC_CHECK_PROG(m17nlib, m17n-config, yes, no)
+fi
+if test "x$m17nlib" = xyes ; then
+	m17n_saved_libs="$LIBS"
+	M17NLIB_LIBS=`m17n-config --libs`
+	LIBS="$LIBS $M17NLIB_LIBS"
+	AC_CHECK_LIB(m17n, minput_open_im,
+		[
+		M17NLIB_CFLAGS="`m17n-config --cflags`"
+		MAKE_DIRS="inputmethod/m17nlib ${MAKE_DIRS}"
+		OUTPUT_FILES="inputmethod/m17nlib/Makefile ${OUTPUT_FILES}"
+		if test "x$with_libltdl" != xno ; then
+			DL_LIBS_IM="-dlopen \$(top_builddir)/inputmethod/m17nlib/libim-m17nlib.la ${DL_LIBS_IM}"
+		fi
+		input_methods_result="$input_methods_result m17nlib"
+		])
+	LIBS="$m17n_saved_libs"
+fi
+AC_SUBST(M17NLIB_CFLAGS)
+AC_SUBST(M17NLIB_LIBS)
+
+#
+# --- IBUS ---
+#
+AC_ARG_ENABLE(ibus,
+	[  --enable-ibus           IBUS (Experimental) @<:@default=disabled@:>@],
+	ibus=$enable_ibus)
+if test "$enable_shared" = "no" ; then
+	ibus="no"
+fi
+
+if test "x$ibus" = "xyes" ; then
+	AC_PROG_CXX
+	PKG_CHECK_MODULES(IBUS, ibus-1.0 >= 1.3.0, has_ibus=yes, has_ibus=no)
+	if test "x$has_ibus" = xyes ; then
+		MAKE_DIRS="inputmethod/ibus ${MAKE_DIRS}"
+		OUTPUT_FILES="inputmethod/ibus/Makefile ${OUTPUT_FILES}"
+		if test "x$with_libltdl" != xno ; then
+			DL_LIBS_IM="-dlopen \$(top_builddir)/inputmethod/ibus/libim-ibus.la ${DL_LIBS_IM}"
+		fi
+		if test "$with_pthread" != "no" ; then
+			# NetBSD doesn't allow shared libraries to link libpthread
+			# without linking it to executables.
+			case "${host_os}" in
+			netbsd*)
+				PTHREAD_LIB="-lpthread"
+				;;
+			esac
+		fi
+		input_methods_result="$input_methods_result iBus"
+	fi
+fi
+AC_SUBST(IBUS_CFLAGS)
+AC_SUBST(IBUS_LIBS)
+
+#
+# --- SCIM ---
+#
+AC_ARG_ENABLE(scim,
+	[  --enable-scim           SCIM (Experimental) @<:@default=disabled@:>@],
+	scim=$enable_scim)
+if test "$enable_shared" = "no" ; then
+	scim="no"
+fi
+
+if test "x$scim" = "xyes" -a "$gui" != "fb" ; then
+	AC_PROG_CXX
+	PKG_CHECK_MODULES(SCIM, scim >= 1.4.0, has_scim=yes , has_scim=no)
+	if test "x$has_scim" = xyes ; then
+		MAKE_DIRS="inputmethod/scim ${MAKE_DIRS}"
+		OUTPUT_FILES="inputmethod/scim/Makefile ${OUTPUT_FILES}"
+		if test "x$with_libltdl" != xno ; then
+			DL_LIBS_IM="-dlopen \$(top_builddir)/inputmethod/scim/libim-scim.la ${DL_LIBS_IM}"
+		fi
+		input_methods_result="$input_methods_result SCIM"
+	fi
+fi
+AC_SUBST(SCIM_CFLAGS)
+AC_SUBST(SCIM_LIBS)
+
+
+if test "x$input_methods_result" != x ; then
+	IM_CFLAGS="-DUSE_IM_PLUGIN"
+fi
+AC_SUBST(IM_CFLAGS)
+AC_SUBST(DL_LIBS_IM)
+
+
+#
+# --- scrollbar plugins ---
+#
+
+DL_LIBS_SB=""
+SB_CFLAGS=""
+
+scrollbars="sample,extra"  # default
+
+AC_ARG_WITH(scrollbars,
+	[  --with-scrollbars@<:@=ARG@:>@ scrollbar plugins (sample, extra, pixmap_engine) @<:@default=sample,extra@:>@],
+	[
+	# If given --without-scrollbars or --with-scrollbars with no args.
+	if test "${with_scrollbars}" = "no" ; then
+		scrollbars=""
+	elif test "${with_scrollbars}" != "yes" ; then
+		scrollbars=${with_scrollbars}
+	fi
+	])
+
+if test "$enable_shared" != "no" ; then
+	scrollbars=`echo ${scrollbars} | sed 's/,/ /g'`
+else
+	scrollbars=
+fi
+
+# sample scrollbar needs x_window_clear etc.
+if test "$gui" = "fb" -a "$scrollbars" != "" ; then
+	DL_LIBS_SB="-export-dynamic ${DL_LIBS_SB}"
+fi
+
+for scrollbar in ${scrollbars} ; do
+case ${scrollbar} in
+sample)
+	MAKE_DIRS="scrollbar/sample ${MAKE_DIRS}"
+	OUTPUT_FILES="scrollbar/sample/Makefile ${OUTPUT_FILES}"
+	if test "x$with_libltdl" != "xno" ; then
+		for name in sample sample2 ; do
+			DL_LIBS_SB="-dlopen \$(top_builddir)/scrollbar/sample/lib$name.la ${DL_LIBS_SB}"
+		done
+	fi
+	scrollbars_result="$scrollbars_result $scrollbar"
+	;;
+extra)
+	if test "$gui" = "xlib" ; then
+		MAKE_DIRS="contrib/scrollbar/extra ${MAKE_DIRS}"
+		OUTPUT_FILES="contrib/scrollbar/extra/Makefile ${OUTPUT_FILES}"
+		if test "x$with_libltdl" != "xno" ; then
+			for name in athena next motif mozmodern ; do
+				DL_LIBS_SB="-dlopen \$(top_builddir)/contrib/scrollbar/extra/lib$name.la ${DL_LIBS_SB}"
+			done
+		fi
+		scrollbars_result="$scrollbars_result $scrollbar"
+	fi
+	;;
+pixmap_engine)
+	if test "x$allow_undefined_flag" = "xunsupported" ; then
+		echo ""
+		echo "** ERROR **"
+		echo "pixmap_engine has undefined symbols. $host_os does NOT allow it. Please retry"
+		echo "to run configure scripts without pixmap_engine"
+		echo "(e.g.  --with-scrllbars=sample,extra)"
+		echo ""
+		exit 1
+	fi
+	if test "$gui" = "xlib" ; then
+		if test "$have_gdk_pixbuf1" = "yes" -o "$have_gdk_pixbuf2" = "yes" ; then
+			MAKE_DIRS="contrib/scrollbar/pixmap_engine ${MAKE_DIRS}"
+			OUTPUT_FILES="contrib/scrollbar/pixmap_engine/Makefile contrib/scrollbar/pixmap_engine/sample3/Makefile ${OUTPUT_FILES}"
+			if test "x$with_libltdl" != "xno" ; then
+				DL_LIBS_SB="-export-dynamic -dlopen \$(top_builddir)/contrib/scrollbar/pixmap_engine/libpixmap_engine.la ${DL_LIBS_SB}"
+			else
+				DL_LIBS_SB="-export-dynamic ${DL_LIBS_SB}"
+			fi
+			SB_CFLAGS="-DSUPPORT_PIXMAP_ENGINE"
+			scrollbars_result="$scrollbars_result $scrollbar"
+		else
+			echo ""
+			echo "** ERROR **"
+			echo "To use pixmap_engine for scrollbar, you need gdk-pixbuf library."
+			echo ""
+			exit 1
+		fi
+	fi
+	;;
+*)
+	echo "${scrollbar} is unknown scrollbar."
+	;;
+esac
+done # for scrollbar in ${scrollbars}
+
+AC_SUBST(SB_CFLAGS)
+AC_SUBST(DL_LIBS_SB)
+
+
+#
+# --- module related stuffs ---
+#
+
+# undefined symbol
+AC_MSG_CHECKING([for undefined symbol])
+if test "x$allow_undefined_flag" = "xunsupported" ; then
+	AC_MSG_RESULT([not supported])
+	NO_UNDEFINED_FLAG="-no-undefined"
+	KIK_LIBS_FOR_MODULE='-L${top_builddir}/kiklib/src -lkik'
+	MKF_LIBS_FOR_MODULE='-L${top_builddir}/mkf/lib -lmkf'
+else
+	AC_MSG_RESULT(supported)
+	NO_UNDEFINED_FLAG=""
+	KIK_LIBS_FOR_MODULE=""
+	MKF_LIBS_FOR_MODULE=""
+fi
+AC_SUBST(NO_UNDEFINED_FLAG)
+AC_SUBST(KIK_LIBS_FOR_MODULE)
+AC_SUBST(MKF_LIBS_FOR_MODULE)
+
+if test "x$with_libltdl" != "xno" ; then
+	DL_SELF="-dlopen self"
+fi
+AC_SUBST(DL_SELF)
+
+
+AC_ARG_ENABLE(vt52,
+	[  --enable-vt52           enable VT52 emulation @<:@default=disabled@:>@],
+	vt52=$enable_vt52,
+	vt52="no")
+if test "$vt52" = "yes" ; then
+	VT52_CFLAGS="-DUSE_VT52"
+fi
+AC_SUBST(VT52_CFLAGS)
+
+AC_ARG_ENABLE(optimize_redrawing,
+	[  --enable-optimize-redrawing    optimize redrawing a line @<:@default=disabled@:>@],
+	optimize_redrawing=$enable_optimize_redrawing,
+	optimize_redrawing="no")
+if test "$optimize_redrawing" = "yes" ; then
+	CFLAGS="$CFLAGS -DOPTIMIZE_REDRAWING"
+fi
+
+# gettext
+AM_INIT_AUTOMAKE(mlterm,3.3.1)
+AM_GNU_GETTEXT([external])
+
+# XXX(maybe not portable)
+if test "${USE_NLS}" = "yes" ; then
+	AC_CHECK_LIB(intl,gettext,
+		[
+		INTL_LIBS="-lintl"
+		])
+fi
+AC_SUBST(INTL_LIBS)
+
+# Because pic object files are fat, non-pic ones are linked unless --disable-static
+# option is specified.
+if test "$enable_static" = "no" ; then
+	XWINDOW_OBJ_SUFFIX=":.o=.lo"
+fi
+AC_SUBST(XWINDOW_OBJ_SUFFIX)
+
+CHANGE_DATE=`head -n 1 ${top_srcdir-$srcdir}/ChangeLog | sed -n 's/^\(@<:@0-9@:>@*-@<:@0-9@:>@*-@<:@0-9@:>@*\).*$/\1/p'`
+AC_SUBST(CHANGE_DATE)
+OUTPUT_FILES="main/version.h ${OUTPUT_FILES}"
+
+if test "${SUBDIRS}" != "" ; then
+	ac_configure_args="${ac_configure_args} --without-funcs-mlterm-unuse"
+	# for mlterm-x.x.x/fb
+	ac_configure_args="${ac_configure_args} --with-gui=fb --disable-ind --disable-fribidi --with-type-engines=xcore --without-tools"
+	if test "$enable_shared" = "no" ; then
+		ac_configure_args="${ac_configure_args} --disable-dl-table"
+	fi
+
+	AC_CONFIG_SUBDIRS(${SUBDIRS})
+fi
+
+MAKE_DIRS="mlterm mlterm/libctl xwindow/libtype xwindow main man etc ${MAKE_DIRS}"
+OUTPUT_FILES="Makefile mlterm/Makefile mlterm/libctl/Makefile xwindow/libtype/Makefile xwindow/Makefile main/Makefile man/Makefile etc/Makefile java/Makefile ${OUTPUT_FILES}"
+
+AC_ARG_ENABLE(ind,
+	[  --enable-ind            libind @<:@default=disabled@:>@],
+	ind=$enable_ind, ind="no")
+if test "$ind" = "yes" ; then
+	IND_CFLAGS='-I${top_builddir}/libind'
+	IND_LIBS='${top_builddir}/libind/libind.a'
+	MAKE_DIRS="libind ${MAKE_DIRS}"
+	OUTPUT_FILES="libind/Makefile ${OUTPUT_FILES}"
+	if test "$dl_ctl" = "yes" ; then
+		CTL_LIBS="libctl_iscii.la ${CTL_LIBS}"
+	else
+		CTL_CFLAGS="-DUSE_IND ${CTL_CFLAGS}"
+		CTL_LIBS="libctl_iscii.a ${CTL_LIBS}"
+		CTL_LIBS_FOR_PROG="../mlterm/libctl/libctl_iscii.a ${CTL_LIBS_FOR_PROG}"
+	fi
+fi
+AC_SUBST(IND_LIBS)
+AC_SUBST(IND_CFLAGS)
+AC_SUBST(CTL_LIBS)
+AC_SUBST(CTL_LIBS_FOR_PROG)
+
+AC_SUBST(PTHREAD_LIB)
+
+AC_SUBST(MAKE_DIRS)
+
+if test "${MAKE_DIRS}" != "" ; then
+	mkdir -p ${MAKE_DIRS}
+fi
+
+AC_OUTPUT(${OUTPUT_FILES})
+
+# configuration result
+
+echo
+echo
+echo "Mlterm was configured as follows"
+echo
+echo "Installation path prefix          : $prefix"
+dnl echo "Character mapping table           : "
+dnl echo "Character property table          : "
+echo "Build shared libraries            : $enable_shared"
+echo "Build static libraries            : $enable_static"
+dnl echo "Optimization for redrawing a line : $optimize_redrawing"
+echo "BiDi rendering (Fribidi)          : $have_fribidi"
+echo "Indic rendering                   : $ind"
+echo "External tools                    :$tools_result"
+echo "Image processing                  : $image"
+echo "Built-in image library            : $with_imagelib"
+echo "utmp support                      : $utmp"
+echo "Type engines                      :$type_engines_result"
+echo "DnD                               : $dnd"
+echo "Input Methods                     : XIM$input_methods_result"
+echo "Scrollbars                        : simple${scrollbars_result}"
+echo "libssh2                           : $ssh2"
+echo "VT52                              : $vt52"
+echo

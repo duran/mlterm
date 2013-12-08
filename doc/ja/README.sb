@@ -1,0 +1,127 @@
+comment -*- mode: text -*-
+comment $Id$
+
+mltermでは、オリジナルのスクロールバーを比較的簡単に実装するためのフレームワーク
+を提供しています。
+
+以下では、その実装方法について説明します。
+
+* 実装方法の概略
+  1. x_sb_view_t の各イベントごとの描画処理を実装。
+  2. コンパイル、共有ライブラリの作成
+  3. 所定のディレクトリに、ライブラリを配置
+
+* 必要な環境
+  下記のいずれかが使用可能であること。
+
+  o UNIX98 dlopen インターフェース
+  o HP-UX sh_load インターフェース
+  o Win32API LoadLibrary
+  o Mac OS X NSModule インターフェース (EXPERIMENTAL)
+  o libltdl ライブラリ
+
+* x_sb_view_t
+  現在定義されているイベント
+
+  o void (*get_geometry_hints)( struct  x_sb_view * , unsigned int *  width , 
+         unsigned int *  top_margin , unsigned int *  bottom_margin ,
+         int *  up_button_y , unsigned int *  up_button_height ,
+         int *  down_button_y , unsigned int *  down_button_height) ;
+    スクロールバーのジオメトリ情報を渡すイベント
+    スクロールバーの幅、および、垂直方向のマージン、そして、上下スクロールボタン
+    の位置を渡します。
+    (必須)
+
+  o void (*get_default_color)( struct x_sb_view * , char **  fg_color ,
+         char **  bg_color) ;
+    デフォルトの前景背景色を渡すイベント
+    前景背景色に使える名前は、{fg|bg}_color 設定で使えるものと同じです。
+    文字列は、呼び出し側では解放しませんので、内部で処理して下さい。
+    (推奨)
+    
+  o void (*realized)( struct  x_sb_view *  , Display * , int , Window , GC ,
+         unsigned int  win_height) ;
+    スクロールバーが、画面にMAPされる直前で呼ばれるイベント
+    スクロールバーオブジェクトの内部状態の初期化します。
+    受け取ったDisplay,screen,Window,GCを、x_sb_view_t の各メンバに設定するのを忘
+    れないで下さい。
+    (必須)
+    
+  o void (*resized)( struct  x_sb_view * , Window , unsigned int  height) ;
+    スクロールバーの高さが変更された場合に呼ばれるイベント
+    スクロールバーオブジェクト内部の状態を再設定します。
+    受け取った Window を、x_sb_view_t のメンバに設定するのを忘れないで下さい。
+    (必須)
+    
+  o void (*delete)( struct  x_sb_view *) ;
+    スクロールバーオブジェクトの破壊イベント
+    不要になったデータを解放して下さい。
+    (必須)
+
+  o void (*draw_decoration)( struct  x_sb_view *) ;
+    スクロールバーの周りの装飾を描画するイベント
+    (推奨)
+    
+  o void (*draw_scrollbar)( struct  x_sb_view * , int  bar_top_y ,
+         unsigned int  bar_height) ;
+    スクロールバーの描画イベント
+    bar_top_y 位置(top_margin として渡した値は含まれます)から、 bar_height 分の
+    高さのバーを描画します。
+    (必須)
+
+  o void (*up_button_pressed)( struct  x_sb_view *) ;
+  o void (*down_button_pressed)( struct  x_sb_view *) ;
+  o void (*up_button_released)( struct  x_sb_view *) ;
+  o void (*down_button_released)( struct  x_sb_view *) ;
+    get_geometry_hints()で申請した、上スクロールボタン、下スクロールボタンが押さ
+    れた場合に呼ばれるイベント。
+    (推奨)
+  
+* 実装、コンパイル
+  コンストラクタは、必ず、
+
+  x_sb_view_t *  x_[yourbar]_sb_view_new(void) ;  /* 通常版 */
+  x_sb_view_t *  x_[yourbar]_transparent_sb_view_new(void) ;  /* 透過処理対応版 */
+
+  としてください。
+
+  通常のバーと、透過処理に対応したスクロールバーの両方を用意するのが望ましいです。
+  (透過処理版がない場合は、透過処理中でも、通常版が使われます)
+
+  複数のptyウィンドウを起動している場合には、スクロールバーオブジェクトも複数生
+  成されることになりますので、独自のデータ構造をstaticにもっている場合には、それ
+  らの扱いには十分注意して下さい。
+
+  x_sb_view_t を拡張し、
+
+  x_your_sb_view_t 
+  {
+	x_sb_view_t ;
+	your own data ;
+  } ;
+
+  を作って、独自データを、構造体のメンバにもつのが一番確実です。
+
+  ライブラリ名については、必ず、
+
+  lib[yourbar].so
+
+  としてください。
+
+  また、プリプロセッサが、x_sb_view.h を見つけられるよう、x_sb_view.hのあるパス
+  を -I オプションに加えるようにして下さい。
+
+* 登録作業
+  現在のところ、$(PREFIX)/lib/mlterm以下に、できあがったライブラリをコピーしてく
+  ださい。
+
+* 実際に使ってみる
+  $ mlterm -S "your_sb"
+
+  で、作成されたスクロールバーが表示されるはずです。
+  もし、指定した名前のスクロールバーが存在しない場合は、"simple"(mlterm本体に組
+  み込み)が使われます。
+
+* 補足
+  細かい手順などについては、xwindow/x_simple_sb_view.[ch],scrollbar/sample を参
+  照下さい。
