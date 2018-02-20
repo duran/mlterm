@@ -725,6 +725,7 @@ static void poll_event(void) {
         }
 
         init_display(disp->display, NULL);
+        disp->display->resizing = 0;
         ui_window_resize_with_margin(disp->roots[0], disp->width, disp->height, NOTIFY_TO_MYSELF);
       }
     } else if (ev.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
@@ -963,6 +964,8 @@ int ui_display_own_selection(ui_display_t *disp, ui_window_t *win) {
     displays[count]->selection_owner = win;
   }
 
+  (*win->utf_selection_requested)(win, NULL, 0);
+
   return 1;
 }
 
@@ -995,12 +998,31 @@ XID ui_display_get_group_leader(ui_display_t *disp) {
   }
 }
 
-void ui_display_rotate(int rotate) { rotate_display = rotate; }
+void ui_display_rotate(int rotate) {
+  if (num_displays > 0) {
+    bl_msg_printf("rotate_display option is not changeable.\n");
+
+    return;
+  }
+
+  rotate_display = rotate;
+}
 
 int ui_display_resize(ui_display_t *disp, u_int width, u_int height) {
-  SDL_SetWindowSize(disp->display->window, width, height);
+  if (width != disp->width || height != disp->height) {
+    if (rotate_display) {
+      u_int tmp = width;
+      width = height;
+      height = tmp;
+    }
 
-  return 1;
+    disp->display->resizing = 1;
+    SDL_SetWindowSize(disp->display->window, width, height);
+
+    return 1;
+  } else {
+    return 0;
+  }
 }
 
 int ui_display_move(ui_display_t *disp, int x, int y) {
@@ -1148,6 +1170,16 @@ void ui_display_copy_lines(ui_display_t *disp, int src_x, int src_y, int dst_x, 
 }
 
 void ui_display_request_text_selection(ui_display_t *disp) {
+  if (SDL_HasClipboardText() && disp->roots[0]->utf_selection_notified) {
+    char *text;
+    if ((text = SDL_GetClipboardText())) {
+      (*disp->roots[0]->utf_selection_notified)(disp->roots[0], text, strlen(text));
+      SDL_free(text);
+
+      return;
+    }
+  }
+
   if (disp->selection_owner) {
     XSelectionRequestEvent ev;
     ev.type = 0;
@@ -1163,6 +1195,14 @@ void ui_display_send_text_selection(ui_display_t *disp, XSelectionRequestEvent *
                                     u_char *sel_data, size_t sel_len) {
   if (ev && ev->target->utf_selection_notified) {
     (*ev->target->utf_selection_notified)(ev->target, sel_data, sel_len);
+  } else {
+    char *text;
+
+    if ((text = alloca(sel_len + 1))) {
+      memcpy(text, sel_data, sel_len);
+      text[sel_len] = '\0';
+      SDL_SetClipboardText(text);
+    }
   }
 }
 
